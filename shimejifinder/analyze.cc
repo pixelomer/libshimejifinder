@@ -33,20 +33,27 @@ static std::unique_ptr<archive> open_archive(T const& input) {
     throw std::runtime_error("failed to open archive");
 }
 
-void extractAll(archive_folder *folder, std::string const& lower_extension,
+int extractAll(archive_folder *folder, std::string const& lower_extension,
     extract_target tmpl)
 {
     if (folder == nullptr) {
-        return;
+        return 0;
     }
+    int count = 0;
     for (auto &pair : folder->files()) {
         auto &entry = pair.second;
         if (entry->lower_extension() == lower_extension) {
+            if (entry->lower_name() == "icon.png") {
+                // skip icon.png
+                continue;
+            }
             auto target = tmpl;
             target.set_extract_name(entry->lower_name());
             entry->add_target(target);
+            ++count;
         }
     }
+    return count;
 }
 
 void extractShimejiEE(std::string const& root_path, archive &ar, std::string const& default_name) {
@@ -124,15 +131,17 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
         auto sound = folder.folder_named("sound");
         if (sound == nullptr)
             sound = default_sound;
-        behaviors->add_target({ shimeji_name, "behaviors.xml",
-            extract_target::extract_type::XML });
-        actions->add_target({ shimeji_name, "actions.xml",
-            extract_target::extract_type::XML });
-        extractAll(&folder, "png",
+        auto image_count = extractAll(&folder, "png",
             { shimeji_name, "", extract_target::extract_type::IMAGE });
-        extractAll(sound, "wav",
-            { shimeji_name, "", extract_target::extract_type::SOUND });
-        ar.add_shimeji(shimeji_name);
+        if (image_count > 0) {
+            behaviors->add_target({ shimeji_name, "behaviors.xml",
+                extract_target::extract_type::XML });
+            actions->add_target({ shimeji_name, "actions.xml",
+                extract_target::extract_type::XML });
+            extractAll(sound, "wav",
+                { shimeji_name, "", extract_target::extract_type::SOUND });
+            ar.add_shimeji(shimeji_name);
+        }
     }
 }
 
@@ -171,16 +180,17 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
         return;
     }
 
-    behaviors->add_target({ name, "behaviors.xml",
-        extract_target::extract_type::XML });
-    actions->add_target({ name, "actions.xml",
-        extract_target::extract_type::XML });
-
-    extractAll(img, "png",
+    auto image_count = extractAll(img, "png",
         { name, "", extract_target::extract_type::IMAGE });
-    extractAll(sound, "wav",
-        { name, "", extract_target::extract_type::SOUND });
-    ar.add_shimeji(name);
+    if (image_count > 0) {
+        behaviors->add_target({ name, "behaviors.xml",
+            extract_target::extract_type::XML });
+        actions->add_target({ name, "actions.xml",
+            extract_target::extract_type::XML });
+        extractAll(sound, "wav",
+            { name, "", extract_target::extract_type::SOUND });
+        ar.add_shimeji(name);
+    }
 }
 
 void analyze(std::string const& name, archive &ar) {
