@@ -8,6 +8,20 @@
 #include <iostream>
 #include <functional>
 
+static void fix_japanese(std::string &path) {
+    if (path.size() > 8) {
+        const char *last8 = path.c_str() + path.size() - 8;
+        // hardcoded fix for behaviors.xml
+        if (strcmp(last8, "\215s\223\256.xml") == 0) {
+            path = path.substr(0, path.size() - 8) + "behaviors.xml";
+        }
+        // hardcoded fix for actions.xml
+        if (strcmp(last8, "\223\256\215\354.xml") == 0) {
+            path = path.substr(0, path.size() - 8) + "actions.xml";
+        }
+    }
+}
+
 static void iterate_archive(int fd, std::function<void (int, struct archive *, struct archive_entry *)> cb) {
     struct archive *ar;
     struct archive_entry *entry;
@@ -49,37 +63,14 @@ namespace libarchive {
 void archive::fill_entries(int fd) {
     iterate_archive(fd, [this](int idx, ::archive *ar, ::archive_entry *entry){
         (void)ar;
-        char *pathnameAlloc = NULL;
-        const char *pathname = archive_entry_pathname(entry);
-        if (pathname == NULL) {
+        const char *c_pathname = archive_entry_pathname(entry);
+        if (c_pathname == NULL) {
             add_entry({ idx });
             return;
         }
-        auto pathnameLen = strlen(pathname);
-        if (pathnameLen > 8) {
-            const char *last8 = pathname + pathnameLen - 8;
-            // hardcoded fix for behaviors.xml
-            if (strcmp(last8, "\215s\223\256.xml") == 0) {
-                pathnameAlloc = new char[pathnameLen + 6];
-                strcpy(pathnameAlloc, pathname);
-                strcpy(pathnameAlloc + pathnameLen - 8, "behaviors.xml");
-            }
-            // hardcoded fix for actions.xml
-            if (strcmp(last8, "\223\256\215\354.xml") == 0) {
-                pathnameAlloc = new char[pathnameLen + 4];
-                strcpy(pathnameAlloc, pathname);
-                strcpy(pathnameAlloc + pathnameLen - 8, "actions.xml");
-            }
-        }
-        std::string name;
-        if (pathnameAlloc != NULL) {
-            name = pathnameAlloc;
-            delete[] pathnameAlloc;
-        }
-        else {
-            name = pathname;
-        }
-        add_entry({ idx, name });
+        std::string pathname = c_pathname;
+        fix_japanese(pathname);
+        add_entry({ idx, pathname });
     });
 }
 
