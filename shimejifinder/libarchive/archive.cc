@@ -88,6 +88,11 @@ static void fix_japanese(std::string &path) {
 }
 
 void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::archive_entry *)> cb) {
+    #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
+    if (!loaded) {
+        throw std::runtime_error("libarchive not loaded");
+    }
+    #endif
     ::archive *ar;
     ::archive_entry *entry;
     int ret;
