@@ -8,6 +8,69 @@
 #include <iostream>
 #include <functional>
 
+#if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
+#include <dlfcn.h>
+#endif
+
+namespace shimejifinder {
+namespace libarchive {
+
+#if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
+
+::archive *(*archive::archive_read_new)() = NULL;
+::archive_entry *(*archive::archive_read_entry)() = NULL;
+int (*archive::archive_read_support_filter_all)(::archive *) = NULL;
+int (*archive::archive_read_support_format_all)(::archive *) = NULL;
+int (*archive::archive_read_open_fd)(::archive *, int, size_t) = NULL;
+int (*archive::archive_read_free)(::archive *) = NULL;
+const char *(*archive::archive_error_string)(::archive *) = NULL;
+int (*archive::archive_read_next_header)(::archive *, ::archive_entry **) = NULL;
+mode_t (*archive::archive_entry_filetype)(::archive_entry *) = NULL;
+int (*archive::archive_read_data_skip)(::archive *) = NULL;
+const char *(*archive::archive_entry_pathname)(::archive_entry *) = NULL;
+int (*archive::archive_entry_size_is_set)(::archive_entry *) = NULL;
+la_int64_t (*archive::archive_entry_size)(::archive_entry *) = NULL;
+la_ssize_t (*archive::archive_read_data)(::archive *, void *, size_t) = NULL;
+bool archive::loaded = false;
+
+const char *archive::load(const char *path) {
+    void *libarchive = dlopen(path, RTLD_NOW);
+
+    if (libarchive == NULL) {
+        return "no library";
+    }
+
+    #define load(symbol) do { \
+        *(void **)&symbol = dlsym(libarchive, #symbol); \
+        if (symbol == NULL) { \
+            dlclose(libarchive); \
+            return "missing: " #symbol; \
+        } \
+    } while (0)
+
+    load(archive_read_new);
+    load(archive_read_entry);
+    load(archive_read_support_filter_all);
+    load(archive_read_support_format_all);
+    load(archive_read_open_fd);
+    load(archive_read_free);
+    load(archive_error_string);
+    load(archive_read_next_header);
+    load(archive_entry_filetype);
+    load(archive_read_data_skip);
+    load(archive_entry_pathname);
+    load(archive_entry_size_is_set);
+    load(archive_entry_size);
+    load(archive_read_data);
+
+    #undef load
+
+    loaded = true;
+    return NULL;
+}
+
+#endif
+
 static void fix_japanese(std::string &path) {
     if (path.size() > 8) {
         const char *last8 = path.c_str() + path.size() - 8;
@@ -22,9 +85,9 @@ static void fix_japanese(std::string &path) {
     }
 }
 
-static void iterate_archive(int fd, std::function<void (int, struct archive *, struct archive_entry *)> cb) {
-    struct archive *ar;
-    struct archive_entry *entry;
+void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::archive_entry *)> cb) {
+    ::archive *ar;
+    ::archive_entry *entry;
     int ret;
     int idx = 0;
 
@@ -56,9 +119,6 @@ static void iterate_archive(int fd, std::function<void (int, struct archive *, s
             std::string(archive_error_string(ar)));
     }
 }
-
-namespace shimejifinder {
-namespace libarchive {
 
 void archive::fill_entries(int fd) {
     iterate_archive(fd, [this](int idx, ::archive *ar, ::archive_entry *entry){
