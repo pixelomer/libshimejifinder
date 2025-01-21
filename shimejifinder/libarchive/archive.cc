@@ -20,7 +20,6 @@ namespace libarchive {
 #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
 
 ::archive *(*archive::archive_read_new)() = NULL;
-::archive_entry *(*archive::archive_read_entry)() = NULL;
 int (*archive::archive_read_support_filter_all)(::archive *) = NULL;
 int (*archive::archive_read_support_format_all)(::archive *) = NULL;
 int (*archive::archive_read_open_fd)(::archive *, int, size_t) = NULL;
@@ -51,7 +50,6 @@ const char *archive::load(const char *path) {
     } while (0)
 
     load(archive_read_new);
-    load(archive_read_entry);
     load(archive_read_support_filter_all);
     load(archive_read_support_format_all);
     load(archive_read_open_fd);

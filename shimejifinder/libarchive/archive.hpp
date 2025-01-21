@@ -19,7 +19,6 @@ class archive : public shimejifinder::archive {
 #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
 public:
     static ::archive *(*archive_read_new)();
-    static ::archive_entry *(*archive_read_entry)();
     static int (*archive_read_support_filter_all)(::archive *);
     static int (*archive_read_support_format_all)(::archive *);
     static int (*archive_read_open_fd)(::archive *, int, size_t);
