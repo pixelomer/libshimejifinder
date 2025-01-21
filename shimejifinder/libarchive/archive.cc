@@ -1,3 +1,5 @@
+#if !SHIMEJIFINDER_NO_LIBARCHIVE
+
 #include "archive.hpp"
 #include <cstring>
 #include <stdexcept>
@@ -163,3 +165,5 @@ void archive::extract(int fd) {
 
 }
 }
+
+#endif

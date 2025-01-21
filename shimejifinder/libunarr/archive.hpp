@@ -1,4 +1,7 @@
 #pragma once
+
+#if !SHIMEJIFINDER_NO_LIBUNARR
+
 #include "../archive.hpp"
 
 namespace shimejifinder {
@@ -12,3 +15,5 @@ protected:
 
 }
 }
+
+#endif

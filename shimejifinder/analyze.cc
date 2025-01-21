@@ -14,6 +14,7 @@ namespace shimejifinder {
 
 template<typename T>
 static std::unique_ptr<archive> open_archive(T const& input) {
+    #if !SHIMEJIFINDER_NO_LIBARCHIVE
     try {
         auto ar = std::make_unique<libarchive::archive>();
         ar->open(input);
@@ -22,6 +23,8 @@ static std::unique_ptr<archive> open_archive(T const& input) {
     catch (std::exception &ex) {
         std::cerr << "libarchive: open(): " << ex.what() << std::endl;
     }
+    #endif
+    #if !SHIMEJIFINDER_NO_LIBUNARR
     try {
         auto ar = std::make_unique<libunarr::archive>();
         ar->open(input);
@@ -30,6 +33,7 @@ static std::unique_ptr<archive> open_archive(T const& input) {
     catch (std::exception &ex) {
         std::cerr << "libunarr: open(): " << ex.what() << std::endl;
     }
+    #endif
     throw std::runtime_error("failed to open archive");
 }
 

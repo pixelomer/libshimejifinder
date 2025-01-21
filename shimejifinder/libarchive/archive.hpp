@@ -1,4 +1,7 @@
 #pragma once
+
+#if !SHIMEJIFINDER_NO_LIBARCHIVE
+
 #include "../archive.hpp"
 
 #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
@@ -43,3 +46,5 @@ protected:
 
 }
 }
+
+#endif

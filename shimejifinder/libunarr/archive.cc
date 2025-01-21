@@ -1,3 +1,5 @@
+#if !SHIMEJIFINDER_NO_LIBUNARR
+
 #include "archive.hpp"
 #include <stdexcept>
 #include <stdlib.h>
@@ -73,3 +75,5 @@ void archive::extract(int fd) {
 
 }
 }
+
+#endif

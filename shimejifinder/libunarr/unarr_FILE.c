@@ -1,3 +1,5 @@
+#if !SHIMEJIFINDER_NO_LIBUNARR
+
 // adapted from unarr-imp.h and stream.c
 // required for interop with Java
 
@@ -76,3 +78,5 @@ ar_stream *ar_open_FILE(FILE *f)
 {
     return ar_open_stream(f, file_close, file_read, file_seek, file_tell);
 }
+
+#endif
