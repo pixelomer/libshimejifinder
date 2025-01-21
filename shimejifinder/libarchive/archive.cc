@@ -100,10 +100,15 @@ void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::ar
     archive_read_support_filter_all(ar);
     archive_read_support_format_all(ar);
     ret = archive_read_open_fd(ar, fd, 10240);
+    auto get_error = [&ar](){
+        const char *err = archive_error_string(ar);
+        if (err == nullptr) err = "(null)";
+        return std::string { err };
+    };
     if (ret != ARCHIVE_OK) {
         archive_read_free(ar);
         throw std::runtime_error("archive_read_open_filename() failed: " +
-            std::string(archive_error_string(ar)));
+            get_error());
     }
     while ((ret = archive_read_next_header(ar, &entry)) == ARCHIVE_OK) {
         mode_t type = archive_entry_filetype(entry);
@@ -116,12 +121,12 @@ void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::ar
     if (ret != ARCHIVE_EOF) {
         archive_read_free(ar);
         throw std::runtime_error("archive_read_next_header() failed: " +
-            std::string(archive_error_string(ar)));
+            get_error());
     }
     ret = archive_read_free(ar);
     if (ret != ARCHIVE_OK) {
         throw std::runtime_error("archive_read_free() failed: " +
-            std::string(archive_error_string(ar)));
+            get_error());
     }
 }
 
