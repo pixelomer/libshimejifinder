@@ -35,13 +35,13 @@ void archive::write_target(extract_target const& target, uint8_t *buf, size_t si
     out.close();
 }
 
-void archive::fill_entries(int fd) {
-    (void)fd;
+void archive::fill_entries(FILE *file) {
+    (void)file;
     throw std::runtime_error("not implemented");
 }
 
-void archive::extract(int fd) {
-    (void)fd;
+void archive::extract(FILE *file) {
+    (void)file;
     throw std::runtime_error("not implemented");
 }
 
@@ -66,13 +66,13 @@ std::shared_ptr<archive_entry> archive::at(size_t i) const {
 }
 
 void archive::init() {
-    int fd = m_file_open();
+    FILE *file = m_file_open();
     try {
-        fill_entries(fd);
-        ::close(fd);
+        fill_entries(file);
+        fclose(file);
     }
     catch (...) {
-        ::close(fd);
+        fclose(file);
         close();
         throw;
     }
@@ -81,27 +81,27 @@ void archive::init() {
 void archive::open(std::string const& filename) {
     close();
     m_file_open = [filename]() {
-        return ::open(filename.c_str(), O_RDONLY);
+        return fopen(filename.c_str(), "rb");
     };
     init();
 }
 
-void archive::open(std::function<int ()> file_open) {
+void archive::open(std::function<FILE *()> file_open) {
     close();
     m_file_open = file_open;
     init();
 }
 
 void archive::extract(std::filesystem::path output) {
-    int fd = m_file_open();
+    FILE *file = m_file_open();
     m_output_path = output;
     try {
-        extract(fd);
-        ::close(fd);
+        extract(file);
+        fclose(file);
         m_output_path.clear();
     }
     catch (...) {
-        ::close(fd);
+        fclose(file);
         m_output_path.clear();
         throw;
     }

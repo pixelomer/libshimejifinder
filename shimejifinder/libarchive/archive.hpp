@@ -21,7 +21,7 @@ public:
     static ::archive *(*archive_read_new)();
     static int (*archive_read_support_filter_all)(::archive *);
     static int (*archive_read_support_format_all)(::archive *);
-    static int (*archive_read_open_fd)(::archive *, int, size_t);
+    static int (*archive_read_open_FILE)(::archive *, FILE *);
     static int (*archive_read_free)(::archive *);
     static const char *(*archive_error_string)(::archive *);
     static int (*archive_read_next_header)(::archive *, ::archive_entry **);
@@ -37,10 +37,10 @@ public:
     static const char *load(const char *path);
 #endif
 private:
-    static void iterate_archive(int fd, std::function<void (int, ::archive *, ::archive_entry *)> cb);
+    static void iterate_archive(FILE *file, std::function<void (int, ::archive *, ::archive_entry *)> cb);
 protected:
-    void fill_entries(int fd) override;
-    void extract(int fd) override;
+    void fill_entries(FILE *file) override;
+    void extract(FILE *file) override;
 };
 
 }

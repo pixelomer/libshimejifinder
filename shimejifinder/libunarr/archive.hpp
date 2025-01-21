@@ -9,8 +9,8 @@ namespace libunarr {
 
 class archive : public shimejifinder::archive {
 protected:
-    void fill_entries(int fd) override;
-    void extract(int fd) override;
+    void fill_entries(FILE *file) override;
+    void extract(FILE *file) override;
 };
 
 }

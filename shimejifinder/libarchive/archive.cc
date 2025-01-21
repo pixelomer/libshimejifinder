@@ -22,7 +22,7 @@ namespace libarchive {
 ::archive *(*archive::archive_read_new)() = NULL;
 int (*archive::archive_read_support_filter_all)(::archive *) = NULL;
 int (*archive::archive_read_support_format_all)(::archive *) = NULL;
-int (*archive::archive_read_open_fd)(::archive *, int, size_t) = NULL;
+int (*archive::archive_read_open_FILE)(::archive *, FILE *) = NULL;
 int (*archive::archive_read_free)(::archive *) = NULL;
 const char *(*archive::archive_error_string)(::archive *) = NULL;
 int (*archive::archive_read_next_header)(::archive *, ::archive_entry **) = NULL;
@@ -52,7 +52,7 @@ const char *archive::load(const char *path) {
     load(archive_read_new);
     load(archive_read_support_filter_all);
     load(archive_read_support_format_all);
-    load(archive_read_open_fd);
+    load(archive_read_open_FILE);
     load(archive_read_free);
     load(archive_error_string);
     load(archive_read_next_header);
@@ -85,7 +85,7 @@ static void fix_japanese(std::string &path) {
     }
 }
 
-void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::archive_entry *)> cb) {
+void archive::iterate_archive(FILE *file, std::function<void (int, ::archive *, ::archive_entry *)> cb) {
     #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
     if (!loaded) {
         throw std::runtime_error("libarchive not loaded");
@@ -99,7 +99,7 @@ void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::ar
     ar = archive_read_new();
     archive_read_support_filter_all(ar);
     archive_read_support_format_all(ar);
-    ret = archive_read_open_fd(ar, fd, 10240);
+    ret = archive_read_open_FILE(ar, file);
     auto get_error = [&ar](){
         const char *err = archive_error_string(ar);
         if (err == nullptr) err = "(null)";
@@ -130,8 +130,8 @@ void archive::iterate_archive(int fd, std::function<void (int, ::archive *, ::ar
     }
 }
 
-void archive::fill_entries(int fd) {
-    iterate_archive(fd, [this](int idx, ::archive *ar, ::archive_entry *entry){
+void archive::fill_entries(FILE *file) {
+    iterate_archive(file, [this](int idx, ::archive *ar, ::archive_entry *entry){
         (void)ar;
         const char *c_pathname = archive_entry_pathname(entry);
         if (c_pathname == NULL) {
@@ -144,9 +144,9 @@ void archive::fill_entries(int fd) {
     });
 }
 
-void archive::extract(int fd) {
+void archive::extract(FILE *file) {
     std::vector<uint8_t> data;
-    iterate_archive(fd, [this, &data](int idx, ::archive *ar, ::archive_entry *ar_entry) {
+    iterate_archive(file, [this, &data](int idx, ::archive *ar, ::archive_entry *ar_entry) {
         auto entry = at(idx);
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;

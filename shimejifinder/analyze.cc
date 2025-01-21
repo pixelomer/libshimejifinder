@@ -232,10 +232,16 @@ std::unique_ptr<archive> analyze(std::string const& name, std::string const& fil
     return ar;
 }
 
-std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open) {
+std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open) {
     auto ar = open_archive(file_open);
     analyze(name, *ar);   
     return ar;
+}
+
+std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open) {
+    return analyze(name, [file_open](){
+        return fdopen(file_open(), "rb");
+    });
 }
 
 }

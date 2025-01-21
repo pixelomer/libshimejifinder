@@ -22,7 +22,8 @@ struct ar_stream_s {
 
 static void file_close(void *data)
 {
-    fclose(data);
+    /* library user is expected to close the file */
+    //fclose(data);
 }
 
 static size_t file_read(void *data, void *buffer, size_t count)
