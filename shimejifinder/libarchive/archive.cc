@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include "../utils.hpp"
 #include <cstdio>
+#include <sstream>
 #include <archive.h>
 #include <archive_entry.h>
 #include <sys/stat.h>
