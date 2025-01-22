@@ -46,7 +46,7 @@ private:
         la_ssize_t offset;
         ::archive *ar;
         std::vector<uint8_t> buf;
-        bool read(ssize_t *size, const void **out_buf);
+        bool read(la_int64_t *size, const void **out_buf);
         static int close_callback(::archive *ar, void *data);
         static la_int64_t skip_callback(::archive *ar, void *data, la_int64_t skip);
         static la_ssize_t read_callback(::archive *ar, void *data, const void **buf);
