@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <array>
 
 namespace shimejifinder {
 
