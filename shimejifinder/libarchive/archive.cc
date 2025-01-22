@@ -218,8 +218,9 @@ la_ssize_t archive::nested_context::read_callback(::archive *sender, void *data,
 
 la_int64_t archive::nested_context::skip_callback(::archive *sender, void *data, la_int64_t skip) {
     (void)sender;
-    auto ctx = (archive::nested_context *)data;
-    return archive_seek_data(ctx->parent, skip, SEEK_CUR);
+    (void)data;
+    (void)skip;
+    return 0;
 }
 
 int archive::nested_context::close_callback(::archive *sender, void *data) {
