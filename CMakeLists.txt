@@ -12,6 +12,19 @@ set(ENABLE_CAT OFF)
 set(ENABLE_TAR OFF)
 set(ENABLE_CPIO OFF)
 
+add_custom_command(
+    OUTPUT default_xmls
+    COMMAND ./bin2cpp.sh default_actions.xml shimejifinder/default_actions.cc &&
+        ./bin2cpp.sh default_behaviors.xml shimejifinder/default_behaviors.cc
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    DEPENDS bin2cpp.sh
+)
+
+add_custom_target(
+    default_xmls_target
+    DEPENDS default_xmls
+)
+
 if(NOT DEFINED CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
 endif()
@@ -45,7 +58,7 @@ else()
 endif()
 
 target_link_libraries(shimejifinder unarr archive)
-add_dependencies(shimejifinder unarr archive)
+add_dependencies(shimejifinder unarr archive default_xmls_target)
 
 if(SHIMEJIFINDER_BUILD_EXAMPLES)
     add_executable(shimejifinder-test main.cc)

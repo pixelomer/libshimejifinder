@@ -1,3 +1,4 @@
+#include <shimejifinder/archive.hpp>
 #include <shimejifinder/analyze.hpp>
 #include <shimejifinder/archive_folder.hpp>
 #include <cstdlib>
@@ -13,11 +14,11 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     std::string path = argv[1];
-    auto ar = shimejifinder::analyze(path, path);
+    auto ar = shimejifinder::analyze(path);
     for (auto &found : ar->shimejis()) {
         std::cout << "found: " << found << std::endl;
     }
-    //shimejifinder::archive_folder root { *ar };
-    //root.print(std::cout);
+    shimejifinder::archive_folder root { *ar };
+    root.print(std::cout);
     ar->extract(std::filesystem::current_path() / "out");
 }

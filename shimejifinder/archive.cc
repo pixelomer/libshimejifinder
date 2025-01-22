@@ -6,6 +6,10 @@
 #include <fstream>
 #include <cstdint>
 
+#include "default_actions.cc"
+#include "default_behaviors.cc"
+#include "shimejifinder/extract_target.hpp"
+
 namespace shimejifinder {
 
 void archive::add_entry(archive_entry const& entry) {
@@ -52,6 +56,10 @@ void archive::write_target(extract_target const& target, uint8_t *buf, size_t si
     begin_write(target);
     write_next(0, buf, size);
     end_write();
+}
+
+void archive::add_default_xml_targets(std::string const& shimeji_name) {
+    m_default_xml_targets.push_back(shimeji_name);
 }
 
 void archive::fill_entries(FILE *file) {
@@ -115,12 +123,31 @@ void archive::open(std::function<FILE *()> file_open) {
     init();
 }
 
+void archive::extract_internal_targets(std::string const& filename,
+    const char *buf, size_t size)
+{
+    for (auto &shimeji : m_default_xml_targets) {
+        begin_write({ shimeji, filename,
+            extract_target::extract_type::XML });
+    }
+    write_next(0, buf, size);
+    end_write();
+}
+
+void archive::extract_internal_targets() {
+    extract_internal_targets("actions.xml", default_actions,
+        default_actions_len);
+    extract_internal_targets("behaviors.xml", default_behaviors,
+        default_behaviors_len);
+}
+
 void archive::extract(std::filesystem::path output) {
     FILE *file = m_file_open();
     m_output_path = output;
     try {
         extract(file);
         fclose(file);
+        extract_internal_targets();
         m_output_path.clear();
     }
     catch (...) {

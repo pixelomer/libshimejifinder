@@ -16,7 +16,11 @@ private:
     std::set<std::string> m_shimejis;
     std::filesystem::path m_output_path;
     std::vector<std::ofstream> m_active_writes;
+    std::vector<std::string> m_default_xml_targets;
     void init();
+    void extract_internal_targets(std::string const& filename,
+        const char *buf, size_t size);
+    void extract_internal_targets();
 protected:
     void begin_write(extract_target const& entry);
     void write_next(size_t offset, const void *buf, size_t size);
@@ -39,6 +43,7 @@ public:
     void open(std::string const& filename);
     void extract(std::filesystem::path output);
     void close();
+    void add_default_xml_targets(std::string const& shimeji_name);
     virtual ~archive();
 };
 

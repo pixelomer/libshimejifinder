@@ -5,10 +5,12 @@
 #include "archive_entry.hpp"
 #include "archive_folder.hpp"
 #include "extract_target.hpp"
+#include "utils.hpp"
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 namespace shimejifinder {
 
@@ -150,7 +152,7 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
 }
 
 void extractShimeji(std::string const& root_path, archive &ar, std::string const& default_name) {
-    std::string name = root_path.substr(root_path.rfind('/')+1);
+    std::string name = last_component(root_path);
     if (name.empty() || name == "Shimeji") {
         name = default_name;
     }
@@ -197,6 +199,29 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
     }
 }
 
+void extractImgFolder(std::string const& root_path, archive &ar, std::string const& default_name) {
+    std::string name = last_component(root_path);
+    if (name.empty() || name == "Shimeji") {
+        name = default_name;
+    }
+    archive_folder root { ar, root_path };
+    std::array<archive_entry *, 46> entries;
+    for (size_t i=1; i<=entries.size(); ++i) {
+        auto shime = "shime" + std::to_string(i) + ".png";
+        auto entry = root.entry_named(shime);
+        if (entry == nullptr) {
+            return;
+        }
+        entries[i-1] = entry;
+    }
+    ar.add_shimeji(name);
+    for (size_t i=0; i<entries.size(); ++i) {
+        entries[i]->add_target({ name, entries[i]->lower_name(),
+            extract_target::extract_type::IMAGE});
+    }
+    ar.add_default_xml_targets(name);
+}
+
 void analyze(std::string const& name, archive &ar) {
     // look for jar files
     for (size_t i=0; i<ar.size(); ++i) {
@@ -224,12 +249,29 @@ void analyze(std::string const& name, archive &ar) {
             extractShimeji(dirname.substr(0, dirname.rfind('/')), ar, name);
         }
     }
+
+    // look for shime1.png
+    for (size_t i=0; i<ar.size(); ++i) {
+        auto entry = ar[i];
+        if (!entry->extract_targets().empty()) {
+            continue;
+        }
+        if (entry->lower_name() == "shime1.png") {
+            auto dirname = entry->dirname();
+            extractImgFolder(dirname, ar, name);
+        }
+    }
 }
 
 std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename) {
     auto ar = open_archive(filename);
     analyze(name, *ar);
     return ar;
+}
+
+std::unique_ptr<archive> analyze(std::string const& filename) {
+    return analyze(std::filesystem::path(filename)
+        .replace_extension().filename().string(), filename);
 }
 
 std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open) {

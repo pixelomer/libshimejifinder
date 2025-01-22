@@ -12,7 +12,12 @@
 !shimejifinder/libunarr/*.h
 !shimejifinder/*.cc
 !shimejifinder/*.hpp
+shimejifinder/default_actions.cc
+shimejifinder/default_behaviors.cc
 !.gitignore
 !.gitmodules
+!bin2cpp.sh
+!default_actions.xml
+!default_behaviors.xml
 !CMakeLists.txt
 !main.cc
