@@ -12,7 +12,7 @@ void archive::add_entry(archive_entry const& entry) {
     m_entries.push_back(std::make_shared<archive_entry>(entry));
 }
 
-void archive::write_target(extract_target const& target, uint8_t *buf, size_t size) {
+void archive::begin_write(extract_target const& target) {
     auto output_path = m_output_path;
     output_path /= target.shimeji_name() + ".mascot";
     switch (target.type()) {
@@ -31,13 +31,36 @@ void archive::write_target(extract_target const& target, uint8_t *buf, size_t si
     output_path /= target.extract_name();
     std::ofstream out;
     out.open(output_path);
-    out.write((const char *)buf, size);
-    out.close();
+    m_active_writes.emplace_back(std::move(out));
+}
+
+void archive::write_next(size_t offset, const void *buf, size_t size) {
+    for (auto &stream : m_active_writes) {
+        stream.seekp(offset);
+        stream.write((const char *)buf, size);
+    }
+}
+
+void archive::end_write() {
+    for (auto &stream : m_active_writes) {
+        stream.close();
+    }
+    m_active_writes.clear();
+}
+
+void archive::write_target(extract_target const& target, uint8_t *buf, size_t size) {
+    begin_write(target);
+    write_next(0, buf, size);
+    end_write();
 }
 
 void archive::fill_entries(FILE *file) {
     (void)file;
     throw std::runtime_error("not implemented");
+}
+
+void archive::revert_to_index(int idx) {
+    m_entries.resize(idx);
 }
 
 void archive::extract(FILE *file) {

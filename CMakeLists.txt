@@ -24,15 +24,6 @@ if(NOT DEFINED SHIMEJIFINDER_BUILD_EXAMPLES)
     set(SHIMEJIFINDER_BUILD_EXAMPLES YES)
 endif()
 
-if(CMAKE_BUILD_TYPE EQUAL "Release")
-    set(CMAKE_CXX_FLAGS "-O3")
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-else()
-    set(CMAKE_CXX_FLAGS "-O0 -g")
-endif()
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wpedantic")
-
 add_library(
     shimejifinder STATIC
     shimejifinder/libarchive/archive.cc
@@ -45,6 +36,13 @@ add_library(
     shimejifinder/extract_target.cc
     shimejifinder/utils.cc
 )
+
+if(CMAKE_BUILD_TYPE EQUAL "Release")
+    target_compile_options(shimejifinder PUBLIC -O3 -Wall -Wextra -Werror -Wpedantic)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+    target_compile_options(shimejifinder PUBLIC -O0 -g -Wall -Wextra -Werror -Wpedantic)
+endif()
 
 target_link_libraries(shimejifinder unarr archive)
 add_dependencies(shimejifinder unarr archive)

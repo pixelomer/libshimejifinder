@@ -35,8 +35,13 @@ private:
     std::vector<std::shared_ptr<archive_entry>> m_entries;
     std::set<std::string> m_shimejis;
     std::filesystem::path m_output_path;
+    std::vector<std::ofstream> m_active_writes;
     void init();
 protected:
+    void begin_write(extract_target const& entry);
+    void write_next(size_t offset, const void *buf, size_t size);
+    void end_write();
+    void revert_to_index(int idx);
     void add_entry(archive_entry const& entry);
     void write_target(extract_target const& target, uint8_t *buf, size_t size);
     virtual void fill_entries(FILE *file);

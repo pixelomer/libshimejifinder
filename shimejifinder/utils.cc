@@ -15,4 +15,16 @@ std::string to_lower(std::string data) {
     return data;
 }
 
+std::string file_extension(std::string const& path) {
+    auto pos = path.rfind('.');
+    if (pos == std::string::npos) {
+        return "";
+    }
+    return path.substr(pos+1);
+}
+
+std::string last_component(std::string const& path) {
+    return path.substr(path.rfind('/')+1);
+}
+
 }

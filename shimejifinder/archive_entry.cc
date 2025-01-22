@@ -8,7 +8,8 @@ archive_entry::archive_entry(): m_valid(false), m_index(-1) {}
 archive_entry::archive_entry(int index): m_valid(false), m_index(index) {}
 archive_entry::archive_entry(int index, std::string const& path): m_valid(true),
     m_index(index), m_path(path),
-    m_lowername(to_lower(path.substr(path.rfind('/')+1))) {}
+    m_lowername(to_lower(last_component(path))),
+    m_extension(file_extension(m_lowername)) {}
 
 bool archive_entry::valid() const {
     return m_valid;
@@ -38,12 +39,8 @@ std::string archive_entry::dirname() const {
     return m_path.substr(0, pos);
 }
 
-std::string archive_entry::lower_extension() const {
-    auto pos = m_lowername.rfind('.');
-    if (pos == std::string::npos) {
-        return "";
-    }
-    return m_lowername.substr(pos+1);
+std::string const& archive_entry::lower_extension() const {
+    return m_extension;
 }
 
 void archive_entry::add_target(extract_target const& target) {

@@ -26,6 +26,7 @@ private:
     std::string m_path;
     std::string m_lowername;
     std::string m_dirname;
+    std::string m_extension;
     std::vector<extract_target> m_extract_targets;
 public:
     archive_entry();
@@ -37,7 +38,7 @@ public:
     std::string const& path() const;
     std::string const& lower_name() const;
     std::string dirname() const;
-    std::string lower_extension() const;
+    std::string const& lower_extension() const;
     void add_target(extract_target const& target);
 };
 

@@ -7,6 +7,7 @@
 #include <iostream>
 
 int main(int argc, char **argv) {
+    setlocale(LC_ALL, "C.UTF-8"); // this is required for 7z
     if (argc <= 1) {
         std::cerr << "usage: shimejifinder-test <path-to-archive>" << std::endl;
         return EXIT_FAILURE;
