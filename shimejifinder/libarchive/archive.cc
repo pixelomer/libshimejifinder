@@ -234,8 +234,9 @@ bool archive::try_recurse(int &idx, ::archive *parent, ::archive_entry *entry, s
 {
     auto ext = to_lower(file_extension(pathname));
     (void)entry;
+    size_t size_without_ext = pathname.size() - ext.size() - 1;
     if (ext == "zip") {
-        auto new_root = pathname + "/";
+        auto new_root = pathname.substr(0, size_without_ext) + "/";
         try {
             // try extracting nested archive without extracting whole archive into memory
             nested_context ctx { parent };
@@ -248,7 +249,7 @@ bool archive::try_recurse(int &idx, ::archive *parent, ::archive_entry *entry, s
         }
     }
     else if (ext == "7z" || ext == "rar") {
-        auto new_root = pathname + "/";
+        auto new_root = pathname.substr(0, size_without_ext) + "/";
         try {
             // try extracting nested archive into memory first
             std::ostringstream ss;
