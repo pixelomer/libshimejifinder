@@ -137,7 +137,7 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
             sound = default_sound;
         auto image_count = extractAll(&folder, "png",
             { shimeji_name, "", extract_target::extract_type::IMAGE });
-        if (image_count > 0) {
+        if (image_count >= 2) {
             behaviors->add_target({ shimeji_name, "behaviors.xml",
                 extract_target::extract_type::XML });
             actions->add_target({ shimeji_name, "actions.xml",
@@ -186,7 +186,7 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
 
     auto image_count = extractAll(img, "png",
         { name, "", extract_target::extract_type::IMAGE });
-    if (image_count > 0) {
+    if (image_count >= 2) {
         behaviors->add_target({ name, "behaviors.xml",
             extract_target::extract_type::XML });
         actions->add_target({ name, "actions.xml",
