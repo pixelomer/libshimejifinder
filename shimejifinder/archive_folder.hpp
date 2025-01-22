@@ -9,22 +9,6 @@
 
 namespace shimejifinder {
 
-/*
-
-@interface SHPArchiveFolder : NSObject
-@property (readonly, getter=name) NSString *name;
-- (instancetype)initWithArchive:(SHPArchive *)archive root:(NSString *)root;
-- (instancetype)folderNamed:(NSString *)name;
-- (SHPArchiveEntry *)fileNamed:(NSString *)name;
-- (instancetype)folderNamed:(NSString *)name caseSensitive:(BOOL)caseSensitive;
-- (SHPArchiveEntry *)fileNamed:(NSString *)name caseSensitive:(BOOL)caseSensitive;
-- (NSArray<SHPArchiveEntry *> *)allFiles;
-- (BOOL)containsFileWithExtension:(NSString *)extension;
-- (NSArray<SHPArchiveFolder *> *)allFolders;
-@end
-
-*/
-
 class archive_folder {
 private:
     std::string m_name;

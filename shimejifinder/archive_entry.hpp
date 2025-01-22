@@ -5,20 +5,6 @@
 
 namespace shimejifinder {
 
-/*
-
-@interface SHPArchiveEntry : NSObject
-@property (nonatomic, assign, readonly) int index;
-@property (nonatomic, strong, readonly) NSString *name;
-@property (nonatomic, strong) NSMutableArray<NSString *> *extractPaths;
-- (void)extractToFolder:(NSString *)folderPath lowercaseFilename:(BOOL)lowercase;
-- (instancetype)initWithName:(NSString *)name index:(int)index;
-- (void)extractTo:(NSString *)filePath;
-- (BOOL)willExtract;
-@end
-
-*/
-
 class archive_entry {
 private:
     bool m_valid;

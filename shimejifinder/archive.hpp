@@ -9,26 +9,6 @@
 
 namespace shimejifinder {
 
-/*
-
-#import "SHPArchiveEntry.h"
-
-@interface SHPArchive : NSObject {
-@protected
-    NSURL *_url;
-    NSArray<SHPArchiveEntry *> *_entries;
-}
-@property (getter=url, readonly) NSURL *url;
-@property (getter=entries, readonly) NSArray<SHPArchiveEntry *> *entries;
-+ (instancetype)archiveWithURL:(NSURL *)url;
-- (NSArray<SHPArchiveEntry *> *)entries;
-- (NSURL *)url;
-- (instancetype)initWithURL:(NSURL *)url; // Do not call directly
-- (void)extract;
-@end
-
-*/
-
 class archive {
 private:
     std::function<FILE *()> m_file_open;
