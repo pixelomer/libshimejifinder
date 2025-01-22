@@ -257,7 +257,7 @@ bool archive::try_recurse(int &idx, ::archive *parent, ::archive_entry *entry, s
             bool read = read_data(parent, ss, 50 * 1024 * 1024);
             if (read) {
                 auto str = ss.str();
-                ss = {};
+                ss.str("");
                 auto ar = archive_read_new();
                 archive_read_support_filter_all(ar);
                 archive_read_support_format_all(ar);
