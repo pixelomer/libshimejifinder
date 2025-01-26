@@ -236,6 +236,11 @@ bool archive::try_recurse(int &idx, ::archive *parent, ::archive_entry *entry, s
     (void)entry;
     size_t size_without_ext = pathname.size() - ext.size() - 1;
     if (ext == "zip") {
+        auto filename = to_lower(last_component(pathname));
+        if (filename == "src.zip") {
+            // ignore src.zip, it usually contains the unmodified default shimeji
+            return false;
+        }
         auto new_root = pathname.substr(0, size_without_ext) + "/";
         try {
             // try extracting nested archive without extracting whole archive into memory
