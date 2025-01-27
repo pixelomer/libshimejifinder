@@ -258,7 +258,6 @@ bool archive::try_recurse(int &idx, ::archive *parent, ::archive_entry *entry, s
         try {
             // try extracting nested archive into memory first
             std::ostringstream ss;
-            archive_seek_data(parent, 0, SEEK_SET);
             bool read = read_data(parent, ss, 50 * 1024 * 1024);
             if (read) {
                 auto str = ss.str();
