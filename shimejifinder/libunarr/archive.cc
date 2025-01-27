@@ -49,22 +49,27 @@ void archive::fill_entries(FILE *file) {
 }
 
 void archive::extract(FILE *file) {
-    std::vector<uint8_t> data;
+    std::vector<uint8_t> data(10240);
     iterate_archive(file, [this, &data](int idx, ar_archive *ar) {
         auto entry = at(idx);
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;
         }
-        size_t size = ar_entry_get_size(ar);
-        if (data.size() < size) {
-            data.resize(size);
-        }
-        if (size > 0) {
-            ar_entry_uncompress(ar, &data[0], size);
-        }
         for (auto &target : entry->extract_targets()) {
-            write_target(target, &data[0], size);
+            begin_write(target);
         }
+        size_t remaining = ar_entry_get_size(ar);
+        size_t offset = 0;
+        while (remaining > 0) {
+            size_t read = std::min(data.size(), remaining);
+            if (!ar_entry_uncompress(ar, &data[0], read)) {
+                break;
+            }
+            write_next(offset, &data[0], read);
+            offset += read;
+            remaining -= read;
+        }
+        end_write();
     });
 }
 
