@@ -122,7 +122,7 @@ bool archive::read_data(::archive *ar, std::function<bool (long, const void *, s
     while (true) {
         const void *buf;
         size_t size;
-        off_t offset;
+        la_int64_t offset;
 
         int ret = archive_read_data_block(ar, &buf, &size, &offset);
         if (ret == ARCHIVE_EOF) {
