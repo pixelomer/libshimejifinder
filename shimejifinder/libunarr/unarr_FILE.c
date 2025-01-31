@@ -81,4 +81,7 @@ ar_stream *ar_open_FILE(FILE *f)
     return ar_open_stream(f, file_close, file_read, file_seek, file_tell);
 }
 
+#else
+// ISO C forbids an empty translation unit
+extern int dummy();
 #endif
