@@ -97,17 +97,25 @@ static void fix_japanese(std::string &path) {
     }
 }
 
-void archive::iterate_archive(FILE *file,
-    std::function<void (int, ::archive *, std::string const&)> cb)
-{
+int archive::archive_open(::archive *ar) {
+    if (has_filename()) {
+        auto name = filename();
+        return archive_read_open_filename(ar, name.c_str(), 102400);
+    }
+    else {
+        // archive_read_open_FILE does not implement seek callback
+        return archive_read_open_fd(ar, fileno(open_file()), 102400);
+    }
+}
+
+void archive::iterate_archive(std::function<void (int, ::archive *, std::string const&)> cb) {
     int idx = 0;
 
     ::archive *ar = archive_read_new();
     archive_read_support_filter_all(ar);
     archive_read_support_format_all(ar);
     
-    // archive_read_open_FILE does not implement seek callback
-    int ret = archive_read_open_fd(ar, fileno(file), 102400);
+    int ret = archive_open(ar);
 
     if (ret != ARCHIVE_OK) {
         auto err = get_error(ar);
@@ -330,8 +338,8 @@ void archive::iterate_archive(::archive *ar, int &idx, std::string const& root,
     }
 }
 
-void archive::fill_entries(FILE *file) {
-    iterate_archive(file, [this](int idx, ::archive *ar, std::string const& pathname){
+void archive::fill_entries() {
+    iterate_archive([this](int idx, ::archive *ar, std::string const& pathname){
         (void)ar;
         if (pathname.empty()) {
             add_entry({ idx });
@@ -343,8 +351,8 @@ void archive::fill_entries(FILE *file) {
     });
 }
 
-void archive::extract(FILE *file) {
-    iterate_archive(file, [this](int idx, ::archive *ar, std::string const& pathname){
+void archive::extract() {
+    iterate_archive([this](int idx, ::archive *ar, std::string const& pathname){
         (void)pathname;
         auto entry = at(idx);
         if (!entry->valid() || entry->extract_targets().empty()) {

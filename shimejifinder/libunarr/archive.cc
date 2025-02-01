@@ -16,10 +16,25 @@ static ar_archive *ar_open_any_archive(ar_stream *stream) {
     return ar;
 }
 
-static void iterate_archive(FILE *file, std::function<void (int, ar_archive *)> cb) {
-    ar_stream *stream = ar_open_FILE(file);
+namespace shimejifinder {
+namespace libunarr {
+
+ar_stream *archive::open_stream() {
+    ar_stream *stream;
+    if (has_filename()) {
+        auto name = filename();
+        stream = ar_open_file(name.c_str());
+    }
+    else {
+        stream = ar_open_FILE(open_file());
+    }
+    return stream;
+}
+
+void archive::iterate_archive(std::function<void (int, ar_archive *)> cb) {
+    ar_stream *stream = open_stream();
     if (stream == nullptr) {
-        throw std::runtime_error("ar_open_FILE() failed");
+        throw std::runtime_error("open_stream() failed");
     }
     ar_archive *archive = ar_open_any_archive(stream);
     if (archive == nullptr) {
@@ -33,11 +48,8 @@ static void iterate_archive(FILE *file, std::function<void (int, ar_archive *)> 
     ar_close(stream);
 }
 
-namespace shimejifinder {
-namespace libunarr {
-
-void archive::fill_entries(FILE *file) {
-    iterate_archive(file, [this](int idx, ar_archive *ar) {
+void archive::fill_entries() {
+    iterate_archive([this](int idx, ar_archive *ar) {
         const char *pathname = ar_entry_get_name(ar);
         if (pathname == nullptr) {
             add_entry({ idx });
@@ -48,9 +60,9 @@ void archive::fill_entries(FILE *file) {
     });
 }
 
-void archive::extract(FILE *file) {
+void archive::extract() {
     std::vector<uint8_t> data(10240);
-    iterate_archive(file, [this, &data](int idx, ar_archive *ar) {
+    iterate_archive([this, &data](int idx, ar_archive *ar) {
         auto entry = at(idx);
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;

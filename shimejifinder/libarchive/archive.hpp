@@ -61,13 +61,14 @@ private:
     bool read_data(::archive *ar, std::ostream &out, size_t max_size = SIZE_MAX);
     bool try_recurse(int &idx, ::archive *, ::archive_entry *, std::string const& pathname,
         std::function<void (int, ::archive *, std::string const&)> &cb);
-    void iterate_archive(FILE *file, std::function<void (int, ::archive *,
+    void iterate_archive(std::function<void (int, ::archive *,
         std::string const&)> cb);
     void iterate_archive(::archive *ar, int &idx, std::string const& root,
         std::function<void (int, ::archive *, std::string const&)> &cb);
+    int archive_open(::archive *ar);
 protected:
-    void fill_entries(FILE *file) override;
-    void extract(FILE *file) override;
+    void fill_entries() override;
+    void extract() override;
 };
 
 }

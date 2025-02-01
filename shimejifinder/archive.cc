@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <stdexcept>
 #include <fcntl.h>
+#include <string>
 #include <unistd.h>
 #include <fstream>
 #include <cstdint>
@@ -62,8 +63,7 @@ void archive::add_default_xml_targets(std::string const& shimeji_name) {
     m_default_xml_targets.push_back(shimeji_name);
 }
 
-void archive::fill_entries(FILE *file) {
-    (void)file;
+void archive::fill_entries() {
     throw std::runtime_error("not implemented");
 }
 
@@ -71,8 +71,7 @@ void archive::revert_to_index(int idx) {
     m_entries.resize(idx);
 }
 
-void archive::extract(FILE *file) {
-    (void)file;
+void archive::extract() {
     throw std::runtime_error("not implemented");
 }
 
@@ -96,14 +95,45 @@ std::shared_ptr<archive_entry> archive::at(size_t i) const {
     return this->operator[](i);
 }
 
+bool archive::has_filename() const {
+    return !m_filename.empty();
+}
+
+std::string archive::filename() const {
+    return m_filename;
+}
+
+FILE *archive::open_file() {
+    FILE *&file = m_opened_file;
+    if (file != nullptr) {
+        throw std::runtime_error("open_file() may only be called once in fill_entries() or extract()");
+    }
+    if (has_filename()) {
+        file = fopen(m_filename.c_str(), "rb");
+    }
+    else {
+        file = m_file_open();
+    }
+    if (file == nullptr) {
+        throw std::runtime_error("fopen() failed");
+    }
+    return file;
+}
+
+void archive::close_opened_file() {
+    if (m_opened_file != nullptr) {
+        fclose(m_opened_file);
+        m_opened_file = nullptr;
+    }
+}
+
 void archive::init() {
-    FILE *file = m_file_open();
     try {
-        fill_entries(file);
-        fclose(file);
+        fill_entries();
+        close_opened_file();
     }
     catch (...) {
-        fclose(file);
+        close_opened_file();
         close();
         throw;
     }
@@ -111,14 +141,14 @@ void archive::init() {
 
 void archive::open(std::string const& filename) {
     close();
-    m_file_open = [filename]() {
-        return fopen(filename.c_str(), "rb");
-    };
+    m_filename = filename;
+    m_file_open = nullptr;
     init();
 }
 
 void archive::open(std::function<FILE *()> file_open) {
     close();
+    m_filename = "";
     m_file_open = file_open;
     init();
 }
@@ -142,16 +172,15 @@ void archive::extract_internal_targets() {
 }
 
 void archive::extract(std::filesystem::path output) {
-    FILE *file = m_file_open();
     m_output_path = output;
     try {
-        extract(file);
-        fclose(file);
+        extract();
+        close_opened_file();
         extract_internal_targets();
         m_output_path.clear();
     }
     catch (...) {
-        fclose(file);
+        close_opened_file();
         m_output_path.clear();
         throw;
     }
@@ -174,6 +203,6 @@ void archive::add_shimeji(std::string const& shimeji) {
     m_shimejis.insert(shimeji);
 }
 
-archive::archive(): m_file_open(nullptr) {}
+archive::archive(): m_file_open(nullptr), m_opened_file(nullptr) {}
 
 }

@@ -12,6 +12,8 @@ namespace shimejifinder {
 class archive {
 private:
     std::function<FILE *()> m_file_open;
+    FILE *m_opened_file;
+    std::string m_filename;
     std::vector<std::shared_ptr<archive_entry>> m_entries;
     std::set<std::string> m_shimejis;
     std::filesystem::path m_output_path;
@@ -21,6 +23,7 @@ private:
     void extract_internal_targets(std::string const& filename,
         const char *buf, size_t size);
     void extract_internal_targets();
+    void close_opened_file();
 protected:
     void begin_write(extract_target const& entry);
     void write_next(size_t offset, const void *buf, size_t size);
@@ -28,8 +31,11 @@ protected:
     void revert_to_index(int idx);
     void add_entry(archive_entry const& entry);
     void write_target(extract_target const& target, uint8_t *buf, size_t size);
-    virtual void fill_entries(FILE *file);
-    virtual void extract(FILE *file);
+    FILE *open_file();
+    bool has_filename() const;
+    std::string filename() const;
+    virtual void fill_entries();
+    virtual void extract();
 public:
     archive();
     size_t size() const;
