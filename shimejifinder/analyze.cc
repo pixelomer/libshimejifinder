@@ -207,6 +207,10 @@ void extractImgFolder(std::string const& root_path, archive &ar, std::string con
     }
     archive_folder root { ar, root_path };
     std::array<archive_entry *, 46> entries;
+    if (root.entry_named("shime47.png") != nullptr) {
+        // shime47.png is not expected to exist
+        return;
+    }
     for (size_t i=1; i<=entries.size(); ++i) {
         auto shime = "shime" + std::to_string(i) + ".png";
         auto entry = root.entry_named(shime);
