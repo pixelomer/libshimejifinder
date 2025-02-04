@@ -35,7 +35,7 @@ void archive::begin_write(extract_target const& target) {
     std::filesystem::create_directories(output_path);
     output_path /= target.extract_name();
     std::ofstream out;
-    out.open(output_path);
+    out.open(output_path, std::ios::out | std::ios::binary);
     m_active_writes.emplace_back(std::move(out));
 }
 
