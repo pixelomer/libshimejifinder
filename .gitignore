@@ -21,3 +21,5 @@ shimejifinder/default_behaviors.cc
 !default_behaviors.xml
 !CMakeLists.txt
 !main.cc
+!README.md
+!LICENSE
