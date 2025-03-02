@@ -60,6 +60,7 @@ int (*archive::archive_read_data_block)(::archive *, const void **, size_t *,
     la_int64_t *) = NULL;
 la_int64_t (*archive::archive_seek_data)(::archive *, la_int64_t, int) = NULL;
 int (*archive::archive_read_open_memory)(::archive *, const void *, size_t) = NULL;
+int (*archive::archive_read_open_filename)(::archive *, const char *, size_t) = NULL;
 
 bool archive::loaded = false;
 
@@ -92,6 +93,7 @@ const char *archive::load(const char *path) {
     load(archive_read_data_block);
     load(archive_seek_data);
     load(archive_read_open_memory);
+    load(archive_read_open_filename);
 
     #undef load
 

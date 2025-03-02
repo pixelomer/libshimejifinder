@@ -52,6 +52,7 @@ public:
         la_int64_t *);
     static la_int64_t (*archive_seek_data)(::archive *, la_int64_t, int);
     static int (*archive_read_open_memory)(::archive *, const void *, size_t);
+    static int (*archive_read_open_filename)(::archive *, const char *, size_t);
 
     static bool loaded;
 
