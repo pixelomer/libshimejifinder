@@ -25,6 +25,7 @@
 #include <set>
 #include <memory>
 #include <filesystem>
+#include "extractor.hpp"
 
 namespace shimejifinder {
 
@@ -35,9 +36,8 @@ private:
     std::string m_filename;
     std::vector<std::shared_ptr<archive_entry>> m_entries;
     std::set<std::string> m_shimejis;
-    std::filesystem::path m_output_path;
-    std::vector<std::ofstream> m_active_writes;
     std::vector<std::string> m_default_xml_targets;
+    extractor *m_extractor;
     void init();
     void extract_internal_targets(std::string const& filename,
         const char *buf, size_t size);
@@ -66,6 +66,7 @@ public:
     void add_shimeji(std::string const& shimeji);
     void open(std::function<FILE *()> file_open);
     void open(std::string const& filename);
+    void extract(extractor *extractor);
     void extract(std::filesystem::path output);
     void close();
     void add_default_xml_targets(std::string const& shimeji_name);

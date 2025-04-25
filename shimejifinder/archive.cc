@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <cstdint>
+#include "fs_extractor.hpp"
 
 #include "default_actions.cc"
 #include "default_behaviors.cc"
@@ -35,40 +36,16 @@ void archive::add_entry(archive_entry const& entry) {
     m_entries.push_back(std::make_shared<archive_entry>(entry));
 }
 
-void archive::begin_write(extract_target const& target) {
-    auto output_path = m_output_path;
-    output_path /= target.shimeji_name() + ".mascot";
-    switch (target.type()) {
-        case extract_target::extract_type::IMAGE:
-            output_path /= "img";
-            break;
-        case extract_target::extract_type::SOUND:
-            output_path /= "sound";
-            break;
-        case extract_target::extract_type::XML:
-            break;
-        default:
-            throw std::runtime_error("invalid extract target");
-    }
-    std::filesystem::create_directories(output_path);
-    output_path /= target.extract_name();
-    std::ofstream out;
-    out.open(output_path, std::ios::out | std::ios::binary);
-    m_active_writes.emplace_back(std::move(out));
+void archive::begin_write(extract_target const& entry) {
+    m_extractor->begin_write(entry);
 }
 
 void archive::write_next(size_t offset, const void *buf, size_t size) {
-    for (auto &stream : m_active_writes) {
-        stream.seekp(offset);
-        stream.write((const char *)buf, size);
-    }
+    m_extractor->write_next(offset, buf, size);
 }
 
 void archive::end_write() {
-    for (auto &stream : m_active_writes) {
-        stream.close();
-    }
-    m_active_writes.clear();
+    m_extractor->end_write();
 }
 
 void archive::write_target(extract_target const& target, uint8_t *buf, size_t size) {
@@ -189,19 +166,24 @@ void archive::extract_internal_targets() {
         default_behaviors_len);
 }
 
-void archive::extract(std::filesystem::path output) {
-    m_output_path = output;
+void archive::extract(extractor *extractor) {
+    m_extractor = extractor;
     try {
         extract();
         close_opened_file();
         extract_internal_targets();
-        m_output_path.clear();
+        m_extractor = nullptr;
     }
     catch (...) {
         close_opened_file();
-        m_output_path.clear();
+        m_extractor = nullptr;
         throw;
     }
+}
+
+void archive::extract(std::filesystem::path output) {
+    fs_extractor extractor { output };
+    extract(&extractor);
 }
 
 void archive::close() {
@@ -221,6 +203,7 @@ void archive::add_shimeji(std::string const& shimeji) {
     m_shimejis.insert(shimeji);
 }
 
-archive::archive(): m_file_open(nullptr), m_opened_file(nullptr) {}
+archive::archive(): m_file_open(nullptr), m_opened_file(nullptr),
+    m_extractor(nullptr) {}
 
 }
