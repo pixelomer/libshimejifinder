@@ -25,6 +25,15 @@ namespace shimejifinder {
 fs_extractor::fs_extractor(std::filesystem::path output):
     m_output_path(output) {}
 
+fs_extractor::~fs_extractor() {}
+
+void fs_extractor::begin_write(std::filesystem::path path) {
+    std::filesystem::create_directories(path.parent_path());
+    std::ofstream out;
+    out.open(path, std::ios::out | std::ios::binary);
+    m_active_writes.emplace_back(std::move(out));
+}
+
 void fs_extractor::begin_write(extract_target const& target) {
     auto output_path = m_output_path;
     output_path /= target.shimeji_name() + ".mascot";
@@ -40,11 +49,8 @@ void fs_extractor::begin_write(extract_target const& target) {
         default:
             throw std::runtime_error("invalid extract target");
     }
-    std::filesystem::create_directories(output_path);
     output_path /= target.extract_name();
-    std::ofstream out;
-    out.open(output_path, std::ios::out | std::ios::binary);
-    m_active_writes.emplace_back(std::move(out));
+    begin_write(output_path);
 }
 
 void fs_extractor::write_next(size_t offset, const void *buf, size_t size) {
@@ -59,6 +65,10 @@ void fs_extractor::end_write() {
         stream.close();
     }
     m_active_writes.clear();
+}
+
+std::filesystem::path const& fs_extractor::output_path() {
+    return m_output_path;
 }
 
 }

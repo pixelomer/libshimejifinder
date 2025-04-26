@@ -58,6 +58,34 @@ static std::unique_ptr<archive> open_archive(T const& input) {
     throw std::runtime_error("failed to open archive");
 }
 
+bool extractFirst(archive_folder *folder, std::string const& lower_extension,
+    extract_target tmpl)
+{
+    if (folder == nullptr) {
+        return false;
+    }
+    std::shared_ptr<archive_entry> first_entry = nullptr;
+    for (auto &pair : folder->files()) {
+        auto &entry = pair.second;
+        if (entry->lower_extension() == lower_extension) {
+            if (entry->lower_name() == "icon.png") {
+                // skip icon.png
+                continue;
+            }
+            if (first_entry == nullptr || entry->lower_name() < first_entry->lower_name()) {
+                first_entry = entry;
+            }
+        }
+    }
+    if (first_entry == nullptr) {
+        return false;
+    }
+    auto target = tmpl;
+    target.set_extract_name(first_entry->lower_name());
+    first_entry->add_target(target);
+    return true;
+}
+
 int extractAll(archive_folder *folder, std::string const& lower_extension,
     extract_target tmpl)
 {
@@ -81,7 +109,9 @@ int extractAll(archive_folder *folder, std::string const& lower_extension,
     return count;
 }
 
-void extractShimejiEE(std::string const& root_path, archive &ar, std::string const& default_name) {
+void extractShimejiEE(std::string const& root_path, archive &ar, std::string const& default_name,
+    analyze_config const& config)
+{
     archive_folder root { ar, root_path };
     auto default_conf = root.folder_named("conf");
     auto default_sound = root.folder_named("sound");
@@ -156,21 +186,29 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
         auto sound = folder.folder_named("sound");
         if (sound == nullptr)
             sound = default_sound;
-        auto image_count = extractAll(&folder, "png",
-            { shimeji_name, "", extract_target::extract_type::IMAGE });
-        if (image_count >= 2) {
-            behaviors->add_target({ shimeji_name, "behaviors.xml",
-                extract_target::extract_type::XML });
-            actions->add_target({ shimeji_name, "actions.xml",
-                extract_target::extract_type::XML });
-            extractAll(sound, "wav",
-                { shimeji_name, "", extract_target::extract_type::SOUND });
-            ar.add_shimeji(shimeji_name);
+        if (config.only_thumbnails) {
+            extractFirst(&folder, "png", { shimeji_name, "",
+                extract_target::extract_type::IMAGE });
+        }
+        else {
+            auto image_count = extractAll(&folder, "png",{ shimeji_name, "",
+                extract_target::extract_type::IMAGE });
+            if (image_count >= 2) {
+                behaviors->add_target({ shimeji_name, "behaviors.xml",
+                    extract_target::extract_type::XML });
+                actions->add_target({ shimeji_name, "actions.xml",
+                    extract_target::extract_type::XML });
+                extractAll(sound, "wav",
+                    { shimeji_name, "", extract_target::extract_type::SOUND });
+                ar.add_shimeji(shimeji_name);
+            }
         }
     }
 }
 
-void extractShimeji(std::string const& root_path, archive &ar, std::string const& default_name) {
+void extractShimeji(std::string const& root_path, archive &ar, std::string const& default_name,
+    analyze_config const& config)
+{
     std::string name = last_component(root_path);
     if (name.empty() || name == "Shimeji") {
         name = default_name;
@@ -205,20 +243,28 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
         return;
     }
 
-    auto image_count = extractAll(img, "png",
-        { name, "", extract_target::extract_type::IMAGE });
-    if (image_count >= 2) {
-        behaviors->add_target({ name, "behaviors.xml",
-            extract_target::extract_type::XML });
-        actions->add_target({ name, "actions.xml",
-            extract_target::extract_type::XML });
-        extractAll(sound, "wav",
-            { name, "", extract_target::extract_type::SOUND });
-        ar.add_shimeji(name);
+    if (config.only_thumbnails) {
+        extractFirst(img, "png", { name, "",
+            extract_target::extract_type::IMAGE });
+    }
+    else {
+        auto image_count = extractAll(img, "png",
+            { name, "", extract_target::extract_type::IMAGE });
+        if (image_count >= 2) {
+            behaviors->add_target({ name, "behaviors.xml",
+                extract_target::extract_type::XML });
+            actions->add_target({ name, "actions.xml",
+                extract_target::extract_type::XML });
+            extractAll(sound, "wav",
+                { name, "", extract_target::extract_type::SOUND });
+            ar.add_shimeji(name);
+        }
     }
 }
 
-void extractImgFolder(std::string const& root_path, archive &ar, std::string const& default_name) {
+void extractImgFolder(std::string const& root_path, archive &ar, std::string const& default_name,
+    analyze_config const& config)
+{
     std::string name = last_component(root_path);
     if (name.empty() || name == "Shimeji") {
         name = default_name;
@@ -238,22 +284,24 @@ void extractImgFolder(std::string const& root_path, archive &ar, std::string con
         entries[i-1] = entry;
     }
     ar.add_shimeji(name);
-    for (size_t i=0; i<entries.size(); ++i) {
+    for (size_t i=0, count=(config.only_thumbnails ? 1 : entries.size());
+        i<count; ++i)
+    {
         entries[i]->add_target({ name, entries[i]->lower_name(),
             extract_target::extract_type::IMAGE});
     }
     ar.add_default_xml_targets(name);
 }
 
-void analyze(std::string const& name, archive &ar) {
+void analyze(std::string const& name, archive &ar, analyze_config const& config) {
     // look for jar files
     for (size_t i=0; i<ar.size(); ++i) {
         auto entry = ar[i];
         if (entry->lower_name() == "shimeji-ee.jar") {
-            extractShimejiEE(entry->dirname(), ar, name);
+            extractShimejiEE(entry->dirname(), ar, name, config);
         }
         else if (entry->lower_name() == "shimeji.jar") {
-            extractShimeji(entry->dirname(), ar, name);
+            extractShimeji(entry->dirname(), ar, name, config);
         }
     }
 
@@ -269,7 +317,7 @@ void analyze(std::string const& name, archive &ar) {
             if (last_comp != "conf") {
                 continue;
             }
-            extractShimeji(dirname.substr(0, dirname.rfind('/')), ar, name);
+            extractShimeji(dirname.substr(0, dirname.rfind('/')), ar, name, config);
         }
     }
 
@@ -281,32 +329,40 @@ void analyze(std::string const& name, archive &ar) {
         }
         if (entry->lower_name() == "shime1.png") {
             auto dirname = entry->dirname();
-            extractImgFolder(dirname, ar, name);
+            extractImgFolder(dirname, ar, name, config);
         }
     }
 }
 
-std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename) {
+std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename,
+    analyze_config const& config)
+{
     auto ar = open_archive(filename);
-    analyze(name, *ar);
+    analyze(name, *ar, config);
     return ar;
 }
 
-std::unique_ptr<archive> analyze(std::string const& filename) {
+std::unique_ptr<archive> analyze(std::string const& filename,
+    analyze_config const& config)
+{
     return analyze(std::filesystem::path(filename)
-        .replace_extension().filename().string(), filename);
+        .replace_extension().filename().string(), filename, config);
 }
 
-std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open) {
+std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open,
+    analyze_config const& config)
+{
     auto ar = open_archive(file_open);
-    analyze(name, *ar);   
+    analyze(name, *ar, config);
     return ar;
 }
 
-std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open) {
+std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open,
+    analyze_config const& config)
+{
     return analyze(name, [file_open](){
         return fdopen(file_open(), "rb");
-    });
+    }, config);
 }
 
 }

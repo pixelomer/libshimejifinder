@@ -16,26 +16,21 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-#pragma once
-#include "extractor.hpp"
-#include <filesystem>
-#include <vector>
+#include "fs_thumb_extractor.hpp"
 
 namespace shimejifinder {
 
-class fs_extractor : public extractor {
-public:
-    fs_extractor(std::filesystem::path output);
-    virtual void begin_write(extract_target const& target);
-    virtual void write_next(size_t offset, const void *buf, size_t size);
-    virtual void end_write();
-    virtual ~fs_extractor();
-    std::filesystem::path const& output_path();
-protected:
-    void begin_write(std::filesystem::path path);
-private:
-    std::filesystem::path m_output_path;
-    std::vector<std::ofstream> m_active_writes;
-};
+fs_thumb_extractor::fs_thumb_extractor(std::filesystem::path output):
+    fs_extractor(output) {}
+
+fs_thumb_extractor::~fs_thumb_extractor() {}
+
+void fs_thumb_extractor::begin_write(extract_target const& target) {
+    if (target.type() != extract_target::extract_type::IMAGE) {
+        return;
+    }
+    auto path = output_path() / (target.shimeji_name() + ".png");
+    fs_extractor::begin_write(path);
+}
 
 }

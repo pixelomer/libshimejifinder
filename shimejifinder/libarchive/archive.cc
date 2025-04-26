@@ -140,7 +140,7 @@ void archive::iterate_archive(std::function<void (int, ::archive *, std::string 
     if (ret != ARCHIVE_OK) {
         auto err = get_error(ar);
         archive_read_free(ar);
-        throw std::runtime_error("archive_read_open_FILE() failed: " + err);
+        throw std::runtime_error("archive_open() failed: " + err);
     }
 
     iterate_archive(ar, idx, "", cb);

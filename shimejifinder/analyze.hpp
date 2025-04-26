@@ -24,9 +24,16 @@
 
 namespace shimejifinder {
 
-std::unique_ptr<archive> analyze(std::string const& filename);
-std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename);
-std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open);
-std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open);
+struct analyze_config {
+    bool only_thumbnails = false;
+};
+
+std::unique_ptr<archive> analyze(std::string const& filename, analyze_config const& config = {});
+std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename,
+    analyze_config const& config = {});
+std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open,
+    analyze_config const& config = {});
+std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open,
+    analyze_config const& config = {});
 
 }

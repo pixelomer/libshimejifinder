@@ -63,6 +63,7 @@ add_library(
     shimejifinder/archive_entry.cc
     shimejifinder/extract_target.cc
     shimejifinder/fs_extractor.cc
+    shimejifinder/fs_thumb_extractor.cc
     shimejifinder/utils.cc
 )
 
