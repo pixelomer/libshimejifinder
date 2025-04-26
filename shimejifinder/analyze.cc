@@ -191,18 +191,16 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
                 extract_target::extract_type::IMAGE });
         }
         else {
-            auto image_count = extractAll(&folder, "png",{ shimeji_name, "",
+            extractAll(&folder, "png",{ shimeji_name, "",
                 extract_target::extract_type::IMAGE });
-            if (image_count >= 2) {
-                behaviors->add_target({ shimeji_name, "behaviors.xml",
-                    extract_target::extract_type::XML });
-                actions->add_target({ shimeji_name, "actions.xml",
-                    extract_target::extract_type::XML });
-                extractAll(sound, "wav",
-                    { shimeji_name, "", extract_target::extract_type::SOUND });
-                ar.add_shimeji(shimeji_name);
-            }
+            behaviors->add_target({ shimeji_name, "behaviors.xml",
+                extract_target::extract_type::XML });
+            actions->add_target({ shimeji_name, "actions.xml",
+                extract_target::extract_type::XML });
+            extractAll(sound, "wav",
+                { shimeji_name, "", extract_target::extract_type::SOUND });
         }
+        ar.add_shimeji(shimeji_name);
     }
 }
 
@@ -248,18 +246,15 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
             extract_target::extract_type::IMAGE });
     }
     else {
-        auto image_count = extractAll(img, "png",
-            { name, "", extract_target::extract_type::IMAGE });
-        if (image_count >= 2) {
-            behaviors->add_target({ name, "behaviors.xml",
-                extract_target::extract_type::XML });
-            actions->add_target({ name, "actions.xml",
-                extract_target::extract_type::XML });
-            extractAll(sound, "wav",
-                { name, "", extract_target::extract_type::SOUND });
-            ar.add_shimeji(name);
-        }
+        extractAll(img, "png", { name, "", extract_target::extract_type::IMAGE });
+        behaviors->add_target({ name, "behaviors.xml",
+            extract_target::extract_type::XML });
+        actions->add_target({ name, "actions.xml",
+            extract_target::extract_type::XML });
+        extractAll(sound, "wav",
+            { name, "", extract_target::extract_type::SOUND });
     }
+    ar.add_shimeji(name);
 }
 
 void extractImgFolder(std::string const& root_path, archive &ar, std::string const& default_name,
