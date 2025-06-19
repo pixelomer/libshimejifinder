@@ -101,12 +101,55 @@ int extractAll(archive_folder *folder, std::string const& lower_extension,
                 continue;
             }
             auto target = tmpl;
-            target.set_extract_name(entry->lower_name());
+            target.set_extract_name(tmpl.extract_name() + entry->lower_name());
             entry->add_target(target);
             ++count;
         }
     }
     return count;
+}
+
+void extractNestedImages(std::string const& shimeji_name, std::string &prefix,
+    archive_folder &subfolder)
+{
+    auto orig_size = prefix.size();
+    if (prefix.empty()) prefix = subfolder.lower_name();
+    else prefix += "_" + subfolder.lower_name();
+
+    // determine if this is an image folder
+    bool is_image_folder = true;
+    for (auto &file_pair : subfolder.files()) {
+        // only allow txt and png
+        if (file_pair.second->lower_extension() != "png" &&
+            file_pair.second->lower_extension() != "txt")
+        {
+            is_image_folder = false;
+            break;
+        }
+    }
+
+    if (is_image_folder) {
+        // extract all images in this folder
+        extractAll(&subfolder, "png", { shimeji_name,
+            prefix + "_", extract_target::extract_type::IMAGE });
+
+        // explore subfolders
+        for (auto &child_pair : subfolder.folders()) {
+            extractNestedImages(shimeji_name, prefix, child_pair.second);
+        }
+    }
+
+    prefix = prefix.substr(0, orig_size);
+}
+
+
+void extractNestedImages(std::string const& shimeji_name,
+    archive_folder &root)
+{
+    std::string prefix;
+    for (auto &pair : root.folders()) {
+        extractNestedImages(shimeji_name, prefix, pair.second);
+    }
 }
 
 void extractShimejiEE(std::string const& root_path, archive &ar, std::string const& default_name,
@@ -193,6 +236,7 @@ void extractShimejiEE(std::string const& root_path, archive &ar, std::string con
         else {
             extractAll(&folder, "png",{ shimeji_name, "",
                 extract_target::extract_type::IMAGE });
+            extractNestedImages(shimeji_name, folder);
             behaviors->add_target({ shimeji_name, "behaviors.xml",
                 extract_target::extract_type::XML });
             actions->add_target({ shimeji_name, "actions.xml",
@@ -247,6 +291,7 @@ void extractShimeji(std::string const& root_path, archive &ar, std::string const
     }
     else {
         extractAll(img, "png", { name, "", extract_target::extract_type::IMAGE });
+        extractNestedImages(name, *img);
         behaviors->add_target({ name, "behaviors.xml",
             extract_target::extract_type::XML });
         actions->add_target({ name, "actions.xml",
