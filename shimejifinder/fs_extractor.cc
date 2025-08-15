@@ -17,6 +17,7 @@
 // 
 
 #include "fs_extractor.hpp"
+#include <iostream>
 #include <filesystem>
 #include <fstream>
 
@@ -47,7 +48,9 @@ void fs_extractor::begin_write(extract_target const& target) {
         case extract_target::extract_type::XML:
             break;
         default:
-            throw std::runtime_error("invalid extract target");
+            std::cerr << "shimejifinder: fs_extractor: ignoring "
+                "invalid extract type" << std::endl;
+            return;
     }
     output_path /= target.extract_name();
     begin_write(output_path);

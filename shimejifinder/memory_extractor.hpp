@@ -17,16 +17,27 @@
 // 
 
 #pragma once
-#include "fs_extractor.hpp"
+#include "extractor.hpp"
+#include <filesystem>
+#include <sstream>
+#include <vector>
+#include <map>
 
 namespace shimejifinder {
 
-class fs_thumb_extractor : public fs_extractor {
+class memory_extractor : public extractor {
 public:
-    fs_thumb_extractor(std::filesystem::path output);
-    virtual ~fs_thumb_extractor();
+    memory_extractor();
     virtual void begin_write(extract_target const& target);
+    virtual void write_next(size_t offset, const void *buf, size_t size);
+    virtual void end_write();
+    virtual ~memory_extractor();
+    bool contains(std::string const& name) const;
+    std::string const& data(std::string const& name) const;
+private:
+    std::map<std::string, std::string> m_output;
+    std::vector<std::string> m_active_writes;
+    std::ostringstream m_buffer;
 };
 
 }
-    

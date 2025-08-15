@@ -4,3 +4,6 @@
 [submodule "unarr"]
 	path = unarr
 	url = https://github.com/selmf/unarr
+[submodule "pugixml"]
+	path = pugixml
+	url = https://github.com/zeux/pugixml

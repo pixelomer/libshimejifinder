@@ -1,6 +1,7 @@
 *
 !libarchive
 !unarr
+!pugixml
 !shimejifinder/
 !shimejifinder/libarchive/
 !shimejifinder/libarchive/*.cc

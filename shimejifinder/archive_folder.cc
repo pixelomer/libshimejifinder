@@ -31,21 +31,88 @@ static std::ostream &indent(std::ostream &out, int depth) {
 
 namespace shimejifinder {
 
-archive_folder::archive_folder() {}
+archive_folder::archive_folder(): m_parent(nullptr) {}
 
 archive_folder *archive_folder::folder_named(std::string const& name) {
     return m_folders.count(name) == 1 ? &m_folders.at(name) : nullptr;
 }
 
-archive_entry *archive_folder::entry_named(std::string const& name) {
+const archive_folder *archive_folder::folder_named(std::string const& name) const {
+    return m_folders.count(name) == 1 ? &m_folders.at(name) : nullptr;
+}
+
+archive_entry *archive_folder::entry_named(std::string const& name) const {
     return m_entries.count(name) == 1 ? m_entries.at(name).get() : nullptr;
 }
 
-std::map<std::string, archive_folder> &archive_folder::folders() {
+archive_entry *archive_folder::relative_file(
+    std::string const& path) const
+{
+    const archive_folder *cwd = this;
+    for (size_t start = 0, end = path.find('/', start);
+        ;
+        start = end + 1, end = path.find('/', start))
+    {
+        if (start == end) {
+            // /path/to//file
+            //         ^^
+            continue;
+        }
+        if (end != std::string::npos) {
+            std::string substr = path.substr(start, end-start);
+            if (substr == ".") {
+                // /path/to/./file
+                //          ^
+            }
+            else if (substr == "..") {
+                // /path/to/../file
+                //          ^^
+                cwd = cwd->parent();
+            }
+            else {
+                // /path/to/my/file
+                //          ^^
+                cwd = cwd->folder_named(substr);
+                if (cwd == nullptr) {
+                    // no such file
+                    return nullptr;
+                }
+            }
+        }
+        else {
+            // /path/to/file
+            //          ^^^^
+            std::string substr = path.substr(start);
+            if (substr == "" || substr == "." || substr == "..") {
+                // invalid filename
+                return nullptr;
+            }
+            else {
+                return cwd->entry_named(substr);
+            }
+        }
+    }
+}
+
+archive_folder *archive_folder::parent() {
+    if (m_parent == nullptr) {
+        return this;
+    }
+    return m_parent;
+}
+
+const archive_folder *archive_folder::parent() const {
+    if (m_parent == nullptr) {
+        return this;
+    }
+    return m_parent;
+}
+
+const std::map<std::string, archive_folder> &archive_folder::folders() const {
     return m_folders;
 }
 
-std::map<std::string, std::shared_ptr<archive_entry>> &archive_folder::files() {
+const std::map<std::string, std::shared_ptr<archive_entry>> &archive_folder::files() const {
     return m_entries;
 }
 
@@ -80,6 +147,7 @@ void archive_folder::print(std::ostream &out, int depth) const {
 }
 
 archive_folder::archive_folder(archive const& ar, std::string const& root): m_name("/") {
+    m_parent = nullptr;
     for (size_t i=0; i<ar.size(); ++i) {
         auto entry = ar[i];
         if (!entry->valid()) {
@@ -104,8 +172,12 @@ archive_folder::archive_folder(archive const& ar, std::string const& root): m_na
         while (std::getline(ss, component, '/')) {
             if (!ss.eof()) {
                 // folder
-                folder = &folder->m_folders[to_lower(component)];
-                folder->m_name = component;
+                auto subfolder = &folder->m_folders[to_lower(component)];
+                if (subfolder->m_parent == nullptr) {
+                    subfolder->m_parent = folder;
+                    subfolder->m_name = component;
+                }
+                folder = subfolder;
             }
             else {
                 // file
@@ -113,6 +185,10 @@ archive_folder::archive_folder(archive const& ar, std::string const& root): m_na
             }
         }
     }
+}
+
+bool archive_folder::is_root() const {
+    return m_parent == nullptr;
 }
 
 }

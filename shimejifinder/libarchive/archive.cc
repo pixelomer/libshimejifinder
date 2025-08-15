@@ -362,7 +362,6 @@ void archive::fill_entries() {
     iterate_archive([this](int idx, ::archive *ar, std::string const& pathname){
         (void)ar;
         if (pathname.empty()) {
-            add_entry({ idx });
             return;
         }
         auto fixed_name = pathname;
@@ -372,9 +371,17 @@ void archive::fill_entries() {
 }
 
 void archive::extract() {
-    iterate_archive([this](int idx, ::archive *ar, std::string const& pathname){
+    size_t stored_idx = 0;
+    iterate_archive([this, &stored_idx](int idx, ::archive *ar, std::string const& pathname){
         (void)pathname;
-        auto entry = at(idx);
+        if (stored_idx >= size()) {
+            return;
+        }
+        auto entry = at(stored_idx);
+        if (idx != entry->index()) {
+            return;
+        }
+        ++stored_idx;
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;
         }
