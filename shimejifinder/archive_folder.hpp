@@ -31,14 +31,17 @@ namespace shimejifinder {
 class archive_folder {
 private:
     std::string m_name;
+    archive_folder *m_parent;
     std::map<std::string, archive_folder> m_folders;
     std::map<std::string, std::shared_ptr<archive_entry>> m_entries;
     void print(std::ostream &out, int depth) const;
 public:
     archive_folder();
     archive_folder(archive const& ar, std::string const& root = "");
-    std::map<std::string, archive_folder> &folders();
-    std::map<std::string, std::shared_ptr<archive_entry>> &files();
+    archive_folder *parent();
+    archive_entry *relative_file(std::string const& path);
+    const std::map<std::string, archive_folder> &folders();
+    const std::map<std::string, std::shared_ptr<archive_entry>> &files();
     archive_folder *folder_named(std::string const& name);
     archive_entry *entry_named(std::string const& name);
     void print(std::ostream &out = std::cout) const;

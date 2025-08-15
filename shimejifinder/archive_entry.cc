@@ -33,6 +33,10 @@ bool archive_entry::valid() const {
     return m_valid;
 }
 
+void archive_entry::clear_targets() {
+    m_extract_targets.clear();
+}
+
 std::string const& archive_entry::path() const {
     return m_path;
 }

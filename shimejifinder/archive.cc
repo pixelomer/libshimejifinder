@@ -33,7 +33,11 @@
 namespace shimejifinder {
 
 void archive::add_entry(archive_entry const& entry) {
-    m_entries.push_back(std::make_shared<archive_entry>(entry));
+    static const std::set<std::string> allowed_extensions =
+        { "wav", "png", "xml" };
+    if (allowed_extensions.count(entry.lower_extension()) == 1) {
+        m_entries.push_back(std::make_shared<archive_entry>(entry));
+    }
 }
 
 void archive::begin_write(extract_target const& entry) {
@@ -167,6 +171,9 @@ void archive::extract_internal_targets() {
 }
 
 void archive::extract(extractor *extractor) {
+    if (m_entries.size() == 0) {
+        return;
+    }
     m_extractor = extractor;
     try {
         extract();

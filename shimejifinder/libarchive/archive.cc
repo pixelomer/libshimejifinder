@@ -372,9 +372,14 @@ void archive::fill_entries() {
 }
 
 void archive::extract() {
-    iterate_archive([this](int idx, ::archive *ar, std::string const& pathname){
+    int stored_idx = 0;
+    iterate_archive([this, &stored_idx](int idx, ::archive *ar, std::string const& pathname){
         (void)pathname;
-        auto entry = at(idx);
+        auto entry = at(stored_idx);
+        if (stored_idx != entry->index()) {
+            return;
+        }
+        ++stored_idx;
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;
         }

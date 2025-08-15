@@ -47,6 +47,7 @@ else()
     pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 endif()
 include_directories(.)
+include_directories(./pugixml)
 
 if(NOT DEFINED SHIMEJIFINDER_BUILD_EXAMPLES)
     set(SHIMEJIFINDER_BUILD_EXAMPLES YES)

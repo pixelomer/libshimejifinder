@@ -36,6 +36,9 @@ void extract_target::set_extract_name(std::string const& name) {
     m_extract_name = name;
 }
 
+extract_target::extract_target(std::string const& filename):
+    m_extract_name(filename), m_type(extract_type::UNSPECIFIED) {}
+
 extract_target::extract_target(std::string const& shimeji_name, std::string const& filename,
     extract_type type): m_shimeji_name(shimeji_name), m_extract_name(filename),
     m_type(type) {}

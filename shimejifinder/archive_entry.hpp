@@ -45,6 +45,7 @@ public:
     std::string dirname() const;
     std::string const& lower_extension() const;
     void add_target(extract_target const& target);
+    void clear_targets();
 };
 
 }

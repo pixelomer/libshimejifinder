@@ -47,7 +47,7 @@ void fs_extractor::begin_write(extract_target const& target) {
         case extract_target::extract_type::XML:
             break;
         default:
-            throw std::runtime_error("invalid extract target");
+            return;
     }
     output_path /= target.extract_name();
     begin_write(output_path);

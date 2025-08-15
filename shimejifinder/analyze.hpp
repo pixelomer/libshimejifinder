@@ -25,7 +25,7 @@
 namespace shimejifinder {
 
 struct analyze_config {
-    bool only_thumbnails = false;
+    bool unused = false;
 };
 
 std::unique_ptr<archive> analyze(std::string const& filename, analyze_config const& config = {});

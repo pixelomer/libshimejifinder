@@ -69,10 +69,7 @@ void archive::iterate_archive(std::function<void (int, ar_archive *)> cb) {
 void archive::fill_entries() {
     iterate_archive([this](int idx, ar_archive *ar) {
         const char *pathname = ar_entry_get_name(ar);
-        if (pathname == nullptr) {
-            add_entry({ idx });
-        }
-        else {
+        if (pathname != nullptr) {
             add_entry({ idx, pathname });
         }
     });
@@ -80,8 +77,13 @@ void archive::fill_entries() {
 
 void archive::extract() {
     std::vector<uint8_t> data(10240);
-    iterate_archive([this, &data](int idx, ar_archive *ar) {
-        auto entry = at(idx);
+    int stored_idx = 0;
+    iterate_archive([this, &data, &stored_idx](int idx, ar_archive *ar) {
+        auto entry = at(stored_idx);
+        if (stored_idx != entry->index()) {
+            return;
+        }
+        ++stored_idx;
         if (!entry->valid() || entry->extract_targets().empty()) {
             return;
         }

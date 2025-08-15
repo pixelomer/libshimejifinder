@@ -23,6 +23,7 @@
 #include "archive_entry.hpp"
 #include "archive_folder.hpp"
 #include "extract_target.hpp"
+#include "memory_extractor.hpp"
 #include "utils.hpp"
 #include <exception>
 #include <iostream>
@@ -30,6 +31,8 @@
 #include <stdexcept>
 #include <string>
 #include <array>
+#include <pugixml.hpp>
+#include <string.h>
 
 namespace shimejifinder {
 
@@ -58,327 +61,182 @@ static std::unique_ptr<archive> open_archive(T const& input) {
     throw std::runtime_error("failed to open archive");
 }
 
-bool extractFirst(archive_folder *folder, std::string const& lower_extension,
-    extract_target tmpl)
-{
-    if (folder == nullptr) {
-        return false;
-    }
-    std::shared_ptr<archive_entry> first_entry = nullptr;
-    for (auto &pair : folder->files()) {
-        auto &entry = pair.second;
-        if (entry->lower_extension() == lower_extension) {
-            if (entry->lower_name() == "icon.png") {
-                // skip icon.png
-                continue;
-            }
-            if (first_entry == nullptr || entry->lower_name() < first_entry->lower_name()) {
-                first_entry = entry;
-            }
-        }
-    }
-    if (first_entry == nullptr) {
-        return false;
-    }
-    auto target = tmpl;
-    target.set_extract_name(first_entry->lower_name());
-    first_entry->add_target(target);
-    return true;
-}
+class analyzer {
+private:
+    std::string m_name;
+    archive *m_ar;
+    analyze_config m_config;
 
-int extractAll(archive_folder *folder, std::string const& lower_extension,
-    extract_target tmpl)
-{
-    if (folder == nullptr) {
-        return 0;
-    }
-    int count = 0;
-    for (auto &pair : folder->files()) {
-        auto &entry = pair.second;
-        if (entry->lower_extension() == lower_extension) {
-            if (entry->lower_name() == "icon.png") {
-                // skip icon.png
-                continue;
-            }
-            auto target = tmpl;
-            target.set_extract_name(tmpl.extract_name() + entry->lower_name());
-            entry->add_target(target);
-            ++count;
-        }
-    }
-    return count;
-}
-
-void extractNestedImages(std::string const& shimeji_name, std::string &prefix,
-    archive_folder &subfolder)
-{
-    auto orig_size = prefix.size();
-    if (prefix.empty()) prefix = subfolder.lower_name();
-    else prefix += "_" + subfolder.lower_name();
-
-    // determine if this is an image folder
-    bool is_image_folder = true;
-    for (auto &file_pair : subfolder.files()) {
-        // only allow txt and png
-        if (file_pair.second->lower_extension() != "png" &&
-            file_pair.second->lower_extension() != "txt")
-        {
-            is_image_folder = false;
-            break;
-        }
-    }
-
-    if (is_image_folder) {
-        // extract all images in this folder
-        extractAll(&subfolder, "png", { shimeji_name,
-            prefix + "_", extract_target::extract_type::IMAGE });
-
-        // explore subfolders
-        for (auto &child_pair : subfolder.folders()) {
-            extractNestedImages(shimeji_name, prefix, child_pair.second);
-        }
-    }
-
-    prefix = prefix.substr(0, orig_size);
-}
-
-
-void extractNestedImages(std::string const& shimeji_name,
-    archive_folder &root)
-{
-    std::string prefix;
-    for (auto &pair : root.folders()) {
-        extractNestedImages(shimeji_name, prefix, pair.second);
-    }
-}
-
-void extractShimejiEE(std::string const& root_path, archive &ar, std::string const& default_name,
-    analyze_config const& config)
-{
-    archive_folder root { ar, root_path };
-    auto default_conf = root.folder_named("conf");
-    auto default_sound = root.folder_named("sound");
-    (void)default_sound;
-    archive_entry *default_behaviors = nullptr;
-    archive_entry *default_actions = nullptr;
-    if (default_conf != nullptr) {
-        default_behaviors = default_conf->entry_named("behaviors.xml");
-        if (default_behaviors == nullptr)
-            default_behaviors = default_conf->entry_named("behavior.xml");
-        default_actions = default_conf->entry_named("actions.xml");
-        if (default_actions == nullptr)
-            default_actions = default_conf->entry_named("action.xml");
-    }
-    auto img = root.folder_named("img");
-    if (img == nullptr) {
-        std::cerr << "warning: no img folder" << std::endl;
-        return;
-    }
-    auto find_xmls = [default_behaviors, default_actions](archive_entry *&actions,
-        archive_entry *&behaviors, archive_folder &shimeji_folder)
-    {
-        auto conf = shimeji_folder.folder_named("conf");
-        if (conf != nullptr) {
-            behaviors = conf->entry_named("behaviors.xml");
-            if (behaviors == nullptr)
-                behaviors = conf->entry_named("behavior.xml");
-            actions = conf->entry_named("actions.xml");
-            if (actions == nullptr)
-                actions = conf->entry_named("action.xml");
-        }
-        if (actions == nullptr)
-            actions = default_actions;
-        if (behaviors == nullptr)
-            behaviors = default_behaviors;
-        if (actions == nullptr || behaviors == nullptr) {
-            std::cerr << "warning: missing actions or behaviors" << std::endl;
-            return false;
-        }
-        return true;
+    struct unparsed_xml_pair {
+        archive_entry *actions;
+        archive_entry *behaviors;
+        archive_folder *root;
     };
-    int count = 0;
-    for (auto &pair : img->folders()) {
-        auto &folder = pair.second;
-        if (folder.name() == "unused") {
-            continue;
-        }
-        archive_entry *actions = nullptr, *behaviors = nullptr;
-        if (!find_xmls(actions, behaviors, folder)) {
-            continue;
-        }
-        // valid shimeji
-        ++count;
-    }
 
-    for (auto &pair : img->folders()) {
-        auto &folder = pair.second;
-        if (folder.name() == "unused") {
-            continue;
-        }
-        std::string shimeji_name;
-        if (folder.name() == "Shimeji" && count == 1) {
-            shimeji_name = default_name;
-        }
-        else {
-            shimeji_name = folder.name();
-        }
-        archive_entry *actions = nullptr, *behaviors = nullptr;
-        if (!find_xmls(actions, behaviors, folder)) {
-            continue;
-        }
-        auto sound = folder.folder_named("sound");
-        if (sound == nullptr)
-            sound = default_sound;
-        if (config.only_thumbnails) {
-            extractFirst(&folder, "png", { shimeji_name, "",
-                extract_target::extract_type::IMAGE });
-        }
-        else {
-            extractAll(&folder, "png",{ shimeji_name, "",
-                extract_target::extract_type::IMAGE });
-            extractNestedImages(shimeji_name, folder);
-            behaviors->add_target({ shimeji_name, "behaviors.xml",
-                extract_target::extract_type::XML });
-            actions->add_target({ shimeji_name, "actions.xml",
-                extract_target::extract_type::XML });
-            extractAll(sound, "wav",
-                { shimeji_name, "", extract_target::extract_type::SOUND });
-        }
-        ar.add_shimeji(shimeji_name);
-    }
-}
+    static std::set<std::string> find_paths(
+        std::string const& actions_xml);
+    void analyze();
+public:
+    void analyze(std::string const& name, archive *ar,
+        analyze_config const& config);
+};
 
-void extractShimeji(std::string const& root_path, archive &ar, std::string const& default_name,
-    analyze_config const& config)
+static archive_entry *find_file(archive_folder *folder,
+    std::vector<std::string> const& names)
 {
-    std::string name = last_component(root_path);
-    if (name.empty() || name == "Shimeji") {
-        name = default_name;
+    archive_entry *entry = nullptr;
+    for (size_t i=0; entry == nullptr && i<names.size(); ++i) {
+        entry = folder->entry_named(names[i]);
     }
-    archive_folder root { ar, root_path };
-    auto img = root.folder_named("img");
-    if (img == nullptr) {
-        img = &root;
-    }
-    auto sound = root.folder_named("sound");
-    auto conf = root.folder_named("conf");
-
-    if (conf == nullptr) {
-        std::cerr << "missing conf" << std::endl;
-        return;
-    }
-
-    auto behaviors = conf->entry_named("行動.xml");
-    if (behaviors == nullptr)
-        behaviors = conf->entry_named("behaviors.xml");
-    if (behaviors == nullptr)
-        behaviors = conf->entry_named("behavior.xml");
-    
-    auto actions = conf->entry_named("動作.xml");
-    if (actions == nullptr)
-        actions = conf->entry_named("actions.xml");
-    if (actions == nullptr)
-        actions = conf->entry_named("action.xml");
-
-    if (behaviors == nullptr || actions == nullptr) {
-        std::cerr << "missing actions or behaviors" << std::endl;
-        return;
-    }
-
-    if (config.only_thumbnails) {
-        extractFirst(img, "png", { name, "",
-            extract_target::extract_type::IMAGE });
-    }
-    else {
-        extractAll(img, "png", { name, "", extract_target::extract_type::IMAGE });
-        extractNestedImages(name, *img);
-        behaviors->add_target({ name, "behaviors.xml",
-            extract_target::extract_type::XML });
-        actions->add_target({ name, "actions.xml",
-            extract_target::extract_type::XML });
-        extractAll(sound, "wav",
-            { name, "", extract_target::extract_type::SOUND });
-    }
-    ar.add_shimeji(name);
+    return entry;
 }
 
-void extractImgFolder(std::string const& root_path, archive &ar, std::string const& default_name,
-    analyze_config const& config)
+std::set<std::string> analyzer::find_paths(
+    std::string const& actions_xml)
 {
-    std::string name = last_component(root_path);
-    if (name.empty() || name == "Shimeji") {
-        name = default_name;
-    }
-    archive_folder root { ar, root_path };
-    std::array<archive_entry *, 46> entries;
-    if (root.entry_named("shime47.png") != nullptr) {
-        // shime47.png is not expected to exist
-        return;
-    }
-    for (size_t i=1; i<=entries.size(); ++i) {
-        auto shime = "shime" + std::to_string(i) + ".png";
-        auto entry = root.entry_named(shime);
-        if (entry == nullptr) {
-            return;
+    try {
+        pugi::xml_document doc;
+        doc.load_string(actions_xml.c_str(), pugi::parse_default);
+        auto mascot = doc.child("Mascot");
+        if (mascot == nullptr)
+            mascot = doc.child("マスコット");
+        if (mascot == nullptr) {
+            std::cerr << "shimejifinder: not a mascot file" << std::endl;
+            return {};
         }
-        entries[i-1] = entry;
+        
+        // find file names for referenced images and sounds
+        std::set<std::string> paths;
+        std::vector<pugi::xml_node> search_next = { mascot };
+        while (!search_next.empty()) {
+            size_t size = search_next.size();
+            for (size_t i=0; i<size; ++i) {
+                pugi::xml_node node = search_next[i];
+                auto name = node.name();
+                
+                if (name != NULL && (strcmp(name, "Pose") == 0 ||
+                    strcmp(name, "ポーズ") == 0))
+                {
+                    auto attr = node.attribute("画像");
+                    if (!attr.empty())
+                        paths.insert(attr.as_string());
+
+                    attr = node.attribute("Image");
+                    if (!attr.empty())
+                        paths.insert(attr.as_string());
+
+                    attr = node.attribute("ImageRight");
+                    if (!attr.empty())
+                        paths.insert(attr.as_string());
+
+                    attr = node.attribute("Sound");
+                    if (!attr.empty())
+                        paths.insert(attr.as_string());
+                }
+                else {
+                    // breadth-first search
+                    for (auto child : node.children()) {
+                        if (child.type() == pugi::xml_node_type::node_element) {
+                            search_next.push_back(child);
+                        }
+                    }
+                }
+            }
+        }
+
+        return paths;
     }
-    ar.add_shimeji(name);
-    for (size_t i=0, count=(config.only_thumbnails ? 1 : entries.size());
-        i<count; ++i)
-    {
-        entries[i]->add_target({ name, entries[i]->lower_name(),
-            extract_target::extract_type::IMAGE});
+    catch (std::exception &ex) {
+        std::cerr << "shimejifinder: find_paths() failed: " << ex.what() << std::endl;
     }
-    ar.add_default_xml_targets(name);
+    catch (...) {
+        std::cerr << "shimejifinder: find_paths() failed" << std::endl;
+    }
+    return {};
 }
 
-void analyze(std::string const& name, archive &ar, analyze_config const& config) {
-    // look for jar files
-    for (size_t i=0; i<ar.size(); ++i) {
-        auto entry = ar[i];
-        if (entry->lower_name() == "shimeji-ee.jar") {
-            extractShimejiEE(entry->dirname(), ar, name, config);
-        }
-        else if (entry->lower_name() == "shimeji.jar") {
-            extractShimeji(entry->dirname(), ar, name, config);
-        }
-    }
+void analyzer::analyze() {
+    std::vector<unparsed_xml_pair> unparsed;
+    archive_folder root { *m_ar };
+    std::vector<archive_folder *> search_next = { &root };
 
-    // look for xml files
-    for (size_t i=0; i<ar.size(); ++i) {
-        auto entry = ar[i];
-        if (!entry->extract_targets().empty()) {
-            continue;
-        }
-        if (entry->lower_name() == "actions.xml") {
-            auto dirname = entry->dirname();
-            auto last_comp = dirname.substr(dirname.rfind('/')+1);
-            if (last_comp != "conf") {
+    // find actions/behaviors pairs
+    while (!search_next.empty()) {
+        size_t size = search_next.size();
+        for (size_t i=0; i<size; ++i) {
+            auto folder = search_next[i];
+
+            // breadth-first search
+            for (auto subfolder_pair : folder->folders()) {
+                search_next.push_back(&subfolder_pair.second);
+            }
+
+            // find behaviors file
+            static const std::vector<std::string> behaviours_names =
+                { "行動.xml", "behaviors.xml", "behavior.xml" };
+            archive_entry *behaviors = find_file(folder, behaviours_names);
+            if (behaviors == nullptr) {
                 continue;
             }
-            extractShimeji(dirname.substr(0, dirname.rfind('/')), ar, name, config);
+            
+            // find actions file
+            static const std::vector<std::string> behaviours_names =
+                { "動作.xml", "actions.xml", "action.xml" };
+            archive_entry *actions = find_file(folder, behaviours_names);
+            if (actions == nullptr) {
+                continue;
+            }
+
+            // there is a shimeji here, actions file will be extracted in
+            // the next step
+            unparsed_xml_pair pair;
+            pair.actions = actions;
+            pair.behaviors = behaviors;
+            pair.root = folder;
+            unparsed.push_back(pair);
         }
+        search_next.erase(search_next.begin(), search_next.begin() + size);
     }
 
-    // look for shime1.png
-    for (size_t i=0; i<ar.size(); ++i) {
-        auto entry = ar[i];
-        if (!entry->extract_targets().empty()) {
+    // extract actions
+    memory_extractor extractor;
+    for (size_t i=0; i<unparsed.size(); ++i) {
+        unparsed[i].actions->add_target({ std::to_string(i) });
+    }
+    m_ar->extract(&extractor);
+
+    // determine which shimeji to extract
+    for (size_t i=0; i<unparsed.size(); ++i) {
+        auto &unparsed_pair = unparsed[i];
+        unparsed_pair.actions->clear_targets();
+        auto &actions_xml = extractor.data(std::to_string(i));
+
+        // find paths referenced in the xml
+        auto paths = find_paths(actions_xml);
+        if (paths.size() == 0) {
             continue;
         }
-        if (entry->lower_name() == "shime1.png") {
-            auto dirname = entry->dirname();
-            extractImgFolder(dirname, ar, name, config);
-        }
+        
+        // associate these xml files with image files and shimeji
+        //TODO
     }
+}
+
+void analyzer::analyze(std::string const& name, archive *ar,
+    analyze_config const& config)
+{
+    m_name = name;
+    m_ar = ar;
+    m_config = config;
+
+    analyze();
 }
 
 std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename,
     analyze_config const& config)
 {
     auto ar = open_archive(filename);
-    analyze(name, *ar, config);
+    analyzer{}.analyze(name, ar.get(), config);
     return ar;
 }
 
@@ -393,7 +251,7 @@ std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()
     analyze_config const& config)
 {
     auto ar = open_archive(file_open);
-    analyze(name, *ar, config);
+    analyzer{}.analyze(name, ar.get(), config);
     return ar;
 }
 
