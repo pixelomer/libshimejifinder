@@ -39,6 +39,7 @@ public:
     std::string const& extract_name() const;
     extract_type type() const;
     void set_extract_name(std::string const& name);
+    extract_target();
     extract_target(std::string const& filename);
     extract_target(std::string const& shimeji_name, std::string const& filename,
         extract_type type);

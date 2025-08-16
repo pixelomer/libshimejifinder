@@ -77,10 +77,13 @@ void archive::fill_entries() {
 
 void archive::extract() {
     std::vector<uint8_t> data(10240);
-    int stored_idx = 0;
+    size_t stored_idx = 0;
     iterate_archive([this, &data, &stored_idx](int idx, ar_archive *ar) {
+        if (stored_idx >= size()) {
+            return;
+        }
         auto entry = at(stored_idx);
-        if (stored_idx != entry->index()) {
+        if (idx != entry->index()) {
             return;
         }
         ++stored_idx;

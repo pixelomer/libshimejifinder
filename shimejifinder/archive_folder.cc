@@ -31,18 +31,24 @@ static std::ostream &indent(std::ostream &out, int depth) {
 
 namespace shimejifinder {
 
-archive_folder::archive_folder() {}
+archive_folder::archive_folder(): m_parent(nullptr) {}
 
 archive_folder *archive_folder::folder_named(std::string const& name) {
     return m_folders.count(name) == 1 ? &m_folders.at(name) : nullptr;
 }
 
-archive_entry *archive_folder::entry_named(std::string const& name) {
+const archive_folder *archive_folder::folder_named(std::string const& name) const {
+    return m_folders.count(name) == 1 ? &m_folders.at(name) : nullptr;
+}
+
+archive_entry *archive_folder::entry_named(std::string const& name) const {
     return m_entries.count(name) == 1 ? m_entries.at(name).get() : nullptr;
 }
 
-archive_entry *archive_folder::relative_file(std::string const& path) {
-    archive_folder *cwd = this;
+archive_entry *archive_folder::relative_file(
+    std::string const& path) const
+{
+    const archive_folder *cwd = this;
     for (size_t start = 0, end = path.find('/', start);
         ;
         start = end + 1, end = path.find('/', start))
@@ -95,11 +101,18 @@ archive_folder *archive_folder::parent() {
     return m_parent;
 }
 
-const std::map<std::string, archive_folder> &archive_folder::folders() {
+const archive_folder *archive_folder::parent() const {
+    if (m_parent == nullptr) {
+        return this;
+    }
+    return m_parent;
+}
+
+const std::map<std::string, archive_folder> &archive_folder::folders() const {
     return m_folders;
 }
 
-const std::map<std::string, std::shared_ptr<archive_entry>> &archive_folder::files() {
+const std::map<std::string, std::shared_ptr<archive_entry>> &archive_folder::files() const {
     return m_entries;
 }
 
@@ -159,8 +172,12 @@ archive_folder::archive_folder(archive const& ar, std::string const& root): m_na
         while (std::getline(ss, component, '/')) {
             if (!ss.eof()) {
                 // folder
-                folder = &folder->m_folders[to_lower(component)];
-                folder->m_name = component;
+                auto subfolder = &folder->m_folders[to_lower(component)];
+                if (subfolder->m_parent == nullptr) {
+                    subfolder->m_parent = folder;
+                    subfolder->m_name = component;
+                }
+                folder = subfolder;
             }
             else {
                 // file
@@ -168,6 +185,10 @@ archive_folder::archive_folder(archive const& ar, std::string const& root): m_na
             }
         }
     }
+}
+
+bool archive_folder::is_root() const {
+    return m_parent == nullptr;
 }
 
 }

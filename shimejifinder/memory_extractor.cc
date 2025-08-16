@@ -26,10 +26,11 @@ memory_extractor::memory_extractor() {}
 memory_extractor::~memory_extractor() {}
 
 void memory_extractor::begin_write(extract_target const& target) {
-    m_active_writes.emplace_back();
+    m_active_writes.emplace_back(target.extract_name());
 }
 
 void memory_extractor::write_next(size_t offset, const void *buf, size_t size) {
+    m_buffer.seekp(offset);
     m_buffer.write((const char *)buf, size);
 }
 
@@ -40,6 +41,7 @@ void memory_extractor::end_write() {
     }
     m_buffer.str("");
     m_buffer.clear();
+    m_active_writes.clear();
 }
 
 bool memory_extractor::contains(std::string const& name) const {

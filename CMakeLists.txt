@@ -47,7 +47,7 @@ else()
     pkg_check_modules(LIBARCHIVE REQUIRED libarchive)
 endif()
 include_directories(.)
-include_directories(./pugixml)
+add_subdirectory(pugixml)
 
 if(NOT DEFINED SHIMEJIFINDER_BUILD_EXAMPLES)
     set(SHIMEJIFINDER_BUILD_EXAMPLES YES)
@@ -64,7 +64,7 @@ add_library(
     shimejifinder/archive_entry.cc
     shimejifinder/extract_target.cc
     shimejifinder/fs_extractor.cc
-    shimejifinder/fs_thumb_extractor.cc
+    shimejifinder/memory_extractor.cc
     shimejifinder/utils.cc
 )
 
@@ -76,6 +76,8 @@ else()
 endif()
 
 add_dependencies(shimejifinder default_xmls_target)
+add_dependencies(shimejifinder pugixml)
+target_link_libraries(shimejifinder pugixml)
 if(SHIMEJIFINDER_USE_LIBUNARR)
     target_link_libraries(shimejifinder unarr)
     add_dependencies(shimejifinder unarr)

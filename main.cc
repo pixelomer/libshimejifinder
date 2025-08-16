@@ -38,6 +38,6 @@ int main(int argc, char **argv) {
         std::cout << "found: " << found << std::endl;
     }
     shimejifinder::archive_folder root { *ar };
-    //root.print(std::cout);
+    root.print(std::cout);
     ar->extract(std::filesystem::current_path() / "out");
 }
