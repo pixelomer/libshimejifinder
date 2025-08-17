@@ -404,6 +404,7 @@ void analyzer::analyze() {
                 extract_target::extract_type::IMAGE });
             m_ar->add_default_xml_targets(name);
         }
+        m_ar->add_shimeji(name);
     }
 }
 
