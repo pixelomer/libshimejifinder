@@ -209,7 +209,7 @@ bool analyzer::register_shimeji(const archive_folder *base,
 std::string analyzer::shimeji_name(const archive_folder *base) {
     static std::set<std::string> blacklist = {
         "img", "conf", "shimeji", "unused", "shimeji-ee",
-        "src", "/" };
+        "shimejiee", "src", "/" };
     const archive_folder *cwd = base;
     while (blacklist.count(cwd->lower_name()) == 1) {
         const archive_folder *parent = cwd->parent();
