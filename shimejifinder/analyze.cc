@@ -380,6 +380,9 @@ void analyzer::analyze() {
     // associated configuration files
     std::array<archive_entry *, 46> shimes;
     for (auto shime1_root : shime1_roots) {
+        if (shime1_root->entry_named("shime47.png") != nullptr) {
+            continue;
+        }
         size_t i;
         for (i=0; i<46; ++i) {
             auto shime = shime1_root->entry_named("shime" +
@@ -393,9 +396,6 @@ void analyzer::analyze() {
             shimes[i] = shime;
         }
         if (i != 46) {
-            continue;
-        }
-        if (shime1_root->entry_named("shime47.png") != nullptr) {
             continue;
         }
         auto name = shimeji_name(shime1_root);
