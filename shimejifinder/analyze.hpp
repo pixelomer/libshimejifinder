@@ -28,11 +28,41 @@ struct analyze_config {
     bool unused = false;
 };
 
+/// Analyzes the specified archive file and returns an archive object ready
+/// to be extracted, or null if an error occurred.
+/// @param filename Path to archive.
+/// @param config Analyzer configuration.
 std::unique_ptr<archive> analyze(std::string const& filename, analyze_config const& config = {});
+
+/// Analyzes the specified archive file and returns an archive object ready
+/// to be extracted, or null if an error occurred.
+/// @param name User-friendly name of the archive. Usually the archive's
+///             filename without its extension. Will be used as fallbac
+///             when a shimeji's name cannot be determined.
+/// @param filename Path to archive.
+/// @param config Analyzer configuration.
 std::unique_ptr<archive> analyze(std::string const& name, std::string const& filename,
     analyze_config const& config = {});
+
+/// Analyzes the specified archive file and returns an archive object ready
+/// to be extracted, or null if an error occurred.
+/// @param name User-friendly name of the archive. Usually the archive's
+///             filename without its extension. Will be used as fallbac
+///             when a shimeji's name cannot be determined.
+/// @param file_open Callback to open the archive file. Will be called
+///                  multiple times.
+/// @param config Analyzer configuration.
 std::unique_ptr<archive> analyze(std::string const& name, std::function<FILE *()> file_open,
     analyze_config const& config = {});
+
+/// Analyzes the specified archive file and returns an archive object ready
+/// to be extracted, or null if an error occurred.
+/// @param name User-friendly name of the archive. Usually the archive's
+///             filename without its extension. Will be used as fallbac
+///             when a shimeji's name cannot be determined.
+/// @param file_open Callback to open the archive file. Should return a
+///                  file descriptor. Will be called multiple times.
+/// @param config Analyzer configuration.
 std::unique_ptr<archive> analyze(std::string const& name, std::function<int ()> file_open,
     analyze_config const& config = {});
 
