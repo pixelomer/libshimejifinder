@@ -74,8 +74,8 @@ add_library(
 )
 
 if(SHIMEJIFINDER_USE_ICU)
-    find_package(ICU COMPONENTS i18n io uc REQUIRED)
-    target_link_libraries(shimejifinder ICU::i18n ICU::io ICU::uc)
+    find_package(ICU COMPONENTS uc REQUIRED)
+    target_link_libraries(shimejifinder ICU::uc)
     add_definitions(-DSHIMEJIFINDER_USE_ICU=1)
 endif()
 
