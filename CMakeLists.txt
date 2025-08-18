@@ -68,9 +68,16 @@ add_library(
     shimejifinder/archive_entry.cc
     shimejifinder/extract_target.cc
     shimejifinder/fs_extractor.cc
+    shimejifinder/icu.cc
     shimejifinder/memory_extractor.cc
     shimejifinder/utils.cc
 )
+
+if(SHIMEJIFINDER_USE_ICU)
+    find_package(ICU COMPONENTS i18n io uc REQUIRED)
+    target_link_libraries(shimejifinder ICU::i18n ICU::io ICU::uc)
+    add_definitions(-DSHIMEJIFINDER_USE_ICU=1)
+endif()
 
 if(CMAKE_BUILD_TYPE EQUAL "Release")
     target_compile_options(shimejifinder PUBLIC -O3 -Wall -Wextra -Werror -Wpedantic)

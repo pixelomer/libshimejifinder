@@ -25,6 +25,7 @@
 #include <unarr.h>
 #include <functional>
 #include "unarr_FILE.h"
+#include "../icu.hpp"
 
 static ar_archive *ar_open_any_archive(ar_stream *stream) {
     ar_archive *ar = ar_open_rar_archive(stream);
@@ -68,10 +69,21 @@ void archive::iterate_archive(std::function<void (int, ar_archive *)> cb) {
 
 void archive::fill_entries() {
     iterate_archive([this](int idx, ar_archive *ar) {
-        const char *pathname = ar_entry_get_name(ar);
-        if (pathname != nullptr) {
-            add_entry({ idx, pathname });
+        const char *c_pathname = ar_entry_get_name(ar);
+        std::string pathname;
+        if (c_pathname == nullptr) {
+            c_pathname = ar_entry_get_raw_name(ar);
+            if (c_pathname == nullptr) {
+                return;
+            }
+            pathname = c_pathname;
         }
+        #if SHIMEJIFINDER_USE_ICU
+            if (!is_valid_utf8(pathname)) {
+                shift_jis_to_utf8(pathname);
+            }
+        #endif
+        add_entry({ idx, pathname });
     });
 }
 
