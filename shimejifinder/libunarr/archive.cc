@@ -25,7 +25,7 @@
 #include <unarr.h>
 #include <functional>
 #include "unarr_FILE.h"
-#include "../icu.hpp"
+#include "../utf8_convert.hpp"
 
 static ar_archive *ar_open_any_archive(ar_stream *stream) {
     ar_archive *ar = ar_open_rar_archive(stream);
@@ -78,7 +78,7 @@ void archive::fill_entries() {
             }
             pathname = c_pathname;
         }
-        #if SHIMEJIFINDER_USE_ICU
+        #if SHIMEJIFINDER_HAS_UTF8_CONVERT
             if (!is_valid_utf8(pathname)) {
                 shift_jis_to_utf8(pathname);
             }

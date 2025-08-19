@@ -21,7 +21,7 @@
 
 namespace shimejifinder {
 
-#if SHIMEJIFINDER_USE_ICU
+#if SHIMEJIFINDER_HAS_UTF8_CONVERT
 
 bool is_valid_utf8(const std::string &str);
 bool shift_jis_to_utf8(std::string &str);

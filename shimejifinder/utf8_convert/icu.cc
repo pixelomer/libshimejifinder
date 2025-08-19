@@ -1,4 +1,24 @@
-#include "icu.hpp"
+// 
+// libshimejifinder - library for finding and extracting shimeji from archives
+// Copyright (C) 2025 pixelomer
+// 
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+// 
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+// 
+
+#if SHIMEJIFINDER_USE_ICU
+
+#include "../utf8_convert.hpp"
 #include <unicode/unistr.h>
 #include <unicode/ucnv.h>
 #include <unicode/ustring.h>
@@ -6,8 +26,6 @@
 #include <vector>
 
 namespace shimejifinder {
-
-#if SHIMEJIFINDER_USE_ICU
 
 bool is_valid_utf8(const std::string &str) {
     UChar32 c = 0;
@@ -31,7 +49,8 @@ bool shift_jis_to_utf8(std::string &str) {
     int32_t utf16len = ucnv_toUChars(conv, nullptr, 0, str.c_str(), str.size(), &status);
     if (status != U_BUFFER_OVERFLOW_ERROR && U_FAILURE(status)) {
         ucnv_close(conv);
-        std::cerr << "shimejifinder: failed to get utf-16 length: " << status << std::endl;
+        std::cerr << "shimejifinder: ucnv_toUChars: failed to get "
+            "utf-16 length: " << status << std::endl;
         return false;
     }
 
@@ -41,7 +60,8 @@ bool shift_jis_to_utf8(std::string &str) {
     ucnv_toUChars(conv, &utf16[0], utf16len + 1, str.c_str(), str.size(), &status);
     ucnv_close(conv);
     if (U_FAILURE(status)) {
-        std::cerr << "shimejifinder: utf-16 conversion failed: " << status << std::endl;
+        std::cerr << "shimejifinder: ucnv_toUChars: utf-16 conversion "
+            "failed: " << status << std::endl;
         return false;
     }
 
@@ -49,7 +69,8 @@ bool shift_jis_to_utf8(std::string &str) {
     int32_t utf8len = 0;
     u_strToUTF8(nullptr, 0, &utf8len, &utf16[0], utf16len, &status);
     if (status != U_BUFFER_OVERFLOW_ERROR && U_FAILURE(status)) {
-        std::cerr << "shimejifinder: failed to get utf-8 length: " << status << std::endl;
+        std::cerr << "shimejifinder: u_strToUTF8: failed to get "
+            "utf-8 length: " << status << std::endl;
         return false;
     }
 
@@ -58,7 +79,8 @@ bool shift_jis_to_utf8(std::string &str) {
     std::vector<char> utf8(utf8len + 1);
     u_strToUTF8(&utf8[0], utf8len + 1, nullptr, &utf16[0], utf16len, &status);
     if (U_FAILURE(status)) {
-        std::cerr << "shimejifinder: utf-8 conversion failed: " << status << std::endl;
+        std::cerr << "shimejifinder: u_strToUTF8: utf-8 conversion "
+            "failed: " << status << std::endl;
         return false;
     }
 
@@ -67,6 +89,6 @@ bool shift_jis_to_utf8(std::string &str) {
     return true;
 }
 
-#endif
-
 }
+
+#endif

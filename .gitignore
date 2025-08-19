@@ -11,6 +11,8 @@
 !shimejifinder/libunarr/*.hpp
 !shimejifinder/libunarr/*.c
 !shimejifinder/libunarr/*.h
+!shimejifinder/utf8_convert/
+!shimejifinder/utf8_convert/*.cc
 !shimejifinder/*.cc
 !shimejifinder/*.hpp
 shimejifinder/default_actions.cc

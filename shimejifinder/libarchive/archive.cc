@@ -34,7 +34,7 @@
 #include <sys/stat.h>
 #include <iostream>
 #include <functional>
-#include "../icu.hpp"
+#include "../utf8_convert.hpp"
 
 #if SHIMEJIFINDER_DYNAMIC_LIBARCHIVE
 #include <dlfcn.h>
@@ -339,7 +339,7 @@ void archive::iterate_archive(::archive *ar, int &idx, std::string const& root,
             bool did_recurse = false;
             if (c_pathname != nullptr) {
                 pathname = c_pathname;
-                #if SHIMEJIFINDER_USE_ICU
+                #if SHIMEJIFINDER_HAS_UTF8_CONVERT
                     if (!is_valid_utf8(pathname)) {
                         shift_jis_to_utf8(pathname);
                     }

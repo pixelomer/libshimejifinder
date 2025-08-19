@@ -68,15 +68,22 @@ add_library(
     shimejifinder/archive_entry.cc
     shimejifinder/extract_target.cc
     shimejifinder/fs_extractor.cc
-    shimejifinder/icu.cc
     shimejifinder/memory_extractor.cc
+    shimejifinder/utf8_convert/icu.cc
+    shimejifinder/utf8_convert/iconv.cc
     shimejifinder/utils.cc
 )
 
 if(SHIMEJIFINDER_USE_ICU)
     find_package(ICU COMPONENTS uc REQUIRED)
     target_link_libraries(shimejifinder ICU::uc)
-    add_definitions(-DSHIMEJIFINDER_USE_ICU=1)
+    add_definitions(-DSHIMEJIFINDER_USE_ICU=1 -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
+elseif(SHIMEJIFINDER_USE_ICONV)
+    find_package(Iconv)
+    target_link_libraries(shimejifinder Iconv::Iconv)
+    add_definitions(-DSHIMEJIFINDER_USE_ICONV=1 -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
+else()
+    add_definitions(-DSHIMEJIFINDER_HAS_UTF8_CONVERT=0)
 endif()
 
 if(CMAKE_BUILD_TYPE EQUAL "Release")
