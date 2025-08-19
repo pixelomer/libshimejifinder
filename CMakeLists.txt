@@ -69,6 +69,7 @@ add_library(
     shimejifinder/extract_target.cc
     shimejifinder/fs_extractor.cc
     shimejifinder/memory_extractor.cc
+    shimejifinder/utf8_convert/jni.cc
     shimejifinder/utf8_convert/icu.cc
     shimejifinder/utf8_convert/iconv.cc
     shimejifinder/utils.cc
@@ -82,6 +83,9 @@ elseif(SHIMEJIFINDER_USE_ICONV)
     find_package(Iconv)
     target_link_libraries(shimejifinder Iconv::Iconv)
     add_definitions(-DSHIMEJIFINDER_USE_ICONV=1 -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
+elseif(ANDROID AND (SHIMEJIFINDER_USE_JNI OR NOT DEFINED SHIMEJIFINDER_USE_JNI))
+    target_link_libraries(shimejifinder android)
+    add_definitions(-DSHIMEJIFINDER_USE_JNI=1 -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
 else()
     add_definitions(-DSHIMEJIFINDER_HAS_UTF8_CONVERT=0)
 endif()

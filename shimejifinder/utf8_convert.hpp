@@ -17,15 +17,21 @@
 // 
 
 #pragma once
+#if SHIMEJIFINDER_HAS_UTF8_CONVERT
+
 #include <string>
+#if SHIMEJIFINDER_USE_JNI
+#include <jni.h>
+#endif
 
 namespace shimejifinder {
 
-#if SHIMEJIFINDER_HAS_UTF8_CONVERT
-
+#if SHIMEJIFINDER_USE_JNI
+extern JNIEnv *jni_env;
+#endif
 bool is_valid_utf8(const std::string &str);
 bool shift_jis_to_utf8(std::string &str);
 
-#endif
-
 }
+
+#endif
