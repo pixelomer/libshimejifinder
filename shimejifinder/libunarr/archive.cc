@@ -79,8 +79,9 @@ void archive::fill_entries() {
             pathname = c_pathname;
         }
         #if SHIMEJIFINDER_HAS_UTF8_CONVERT
-            if (!is_valid_utf8(pathname)) {
-                shift_jis_to_utf8(pathname);
+            if (!is_valid_utf8(pathname) && !shift_jis_to_utf8(pathname)) {
+                // never allow invalid utf-8
+                return;
             }
         #endif
         add_entry({ idx, pathname });

@@ -340,8 +340,9 @@ void archive::iterate_archive(::archive *ar, int &idx, std::string const& root,
             if (c_pathname != nullptr) {
                 pathname = c_pathname;
                 #if SHIMEJIFINDER_HAS_UTF8_CONVERT
-                    if (!is_valid_utf8(pathname)) {
-                        shift_jis_to_utf8(pathname);
+                    if (!is_valid_utf8(pathname) && !shift_jis_to_utf8(pathname)) {
+                        // never allow invalid utf-8
+                        continue;
                     }
                 #endif
                 pathname = root + pathname; 
