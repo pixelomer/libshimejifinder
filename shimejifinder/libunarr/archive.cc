@@ -70,14 +70,13 @@ void archive::iterate_archive(std::function<void (int, ar_archive *)> cb) {
 void archive::fill_entries() {
     iterate_archive([this](int idx, ar_archive *ar) {
         const char *c_pathname = ar_entry_get_name(ar);
-        std::string pathname;
         if (c_pathname == nullptr) {
             c_pathname = ar_entry_get_raw_name(ar);
             if (c_pathname == nullptr) {
                 return;
             }
-            pathname = c_pathname;
         }
+        std::string pathname = c_pathname;
         #if SHIMEJIFINDER_HAS_UTF8_CONVERT
             if (!is_valid_utf8(pathname) && !shift_jis_to_utf8(pathname)) {
                 // never allow invalid utf-8
