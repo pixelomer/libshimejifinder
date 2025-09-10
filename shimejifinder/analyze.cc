@@ -171,6 +171,9 @@ bool analyzer::register_shimeji(const archive_folder *base,
             }
             auto &path = *path_iter;
             auto entry = search->relative_file(path);
+            if (entry == nullptr) {
+                entry = search->relative_file(normalize_filename(path));
+            }
             if (entry != nullptr) {
                 file.first = entry;
                 file.second = normalize_filename(path);
@@ -206,20 +209,40 @@ bool analyzer::register_shimeji(const archive_folder *base,
     return true;
 }
 
+static std::string strip_mascot_ext(std::string const& str) {
+    static const std::string suffix = ".mascot";
+    if (str.size() >= suffix.size() &&
+        str.substr(str.size() - suffix.size()) == suffix)
+    {
+        return str.substr(0, str.size() - suffix.size());
+    }
+    return str;
+}
+
 std::string analyzer::shimeji_name(const archive_folder *base) {
     static std::set<std::string> blacklist = {
         "img", "conf", "shimeji", "unused", "shimeji-ee",
-        "shimejiee", "src", "/" };
+        "shimejiee", "src", "/", ".", "..", "" };
     const archive_folder *cwd = base;
-    while (blacklist.count(cwd->lower_name()) == 1) {
+    auto lower_name = strip_mascot_ext(cwd->lower_name());
+    bool fail = false;
+    while (!fail && blacklist.count(lower_name) == 1) {
         const archive_folder *parent = cwd->parent();
         if (parent == cwd) {
             // could not find a unique name
-            return m_name;
+            fail = true;
         }
-        cwd = parent;
+        else {
+            cwd = parent;
+            lower_name = strip_mascot_ext(cwd->lower_name());
+        }
     }
-    return cwd->name();
+    if (fail) {
+        return m_name;
+    }
+    else {
+        return cwd->name().substr(0, lower_name.size());
+    }
 }
 
 std::set<std::string> analyzer::find_paths(
