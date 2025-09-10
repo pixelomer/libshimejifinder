@@ -54,13 +54,15 @@ void fs_extractor::begin_write(extract_target const& target) {
     }
     if (m_cleaned_paths.count(output_path) == 0) {
         // delete all files in target directory before extracting
-        std::filesystem::directory_iterator iter { output_path };
-        for (auto file : iter) {
-            if (file.is_regular_file()) {
-                std::filesystem::remove(file.path());
+        m_cleaned_paths.insert(output_path);
+        if (std::filesystem::exists(output_path)) {
+            std::filesystem::directory_iterator iter { output_path };
+            for (auto file : iter) {
+                if (file.is_regular_file()) {
+                    std::filesystem::remove(file.path());
+                }
             }
         }
-        m_cleaned_paths.insert(output_path);
     }
     output_path /= target.extract_name();
     begin_write(output_path);
