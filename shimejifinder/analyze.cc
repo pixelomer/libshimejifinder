@@ -143,6 +143,12 @@ void analyzer::add_search_paths(std::vector<const archive_folder *>
     search_paths.push_back( base->parent() );
     search_paths.push_back( base->parent()->folder_named("img") );
     search_paths.push_back( base->parent()->folder_named("sound") );
+    search_paths.push_back( base->parent()->parent() );
+    search_paths.push_back( base->parent()->parent()->folder_named("img") );
+    search_paths.push_back( base->parent()->parent()->folder_named("sound") );
+    search_paths.push_back( base->parent()->parent()->parent() );
+    search_paths.push_back( base->parent()->parent()->parent()->folder_named("img") );
+    search_paths.push_back( base->parent()->parent()->parent()->folder_named("sound") );
 }
 
 bool analyzer::register_shimeji(const archive_folder *base,
@@ -156,6 +162,16 @@ bool analyzer::register_shimeji(const archive_folder *base,
     if (alternative_base != nullptr) {
         add_search_paths(search_paths, alternative_base);
     }
+
+    // de-duplicate search paths
+    for (size_t i=0; i<search_paths.size(); ++i) {
+        for (size_t j=search_paths.size()-1; j>i; --j) {
+            if (search_paths[i] == search_paths[j]) {
+                search_paths.erase(search_paths.begin() + j);
+            }
+        }
+    }
+    
     std::vector<std::pair<archive_entry *, std::string>> targets(paths.size(),
         { nullptr, "" });
     bool has_images = false;
