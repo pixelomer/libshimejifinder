@@ -52,6 +52,16 @@ void fs_extractor::begin_write(extract_target const& target) {
                 "invalid extract type" << std::endl;
             return;
     }
+    if (m_cleaned_paths.count(output_path) == 0) {
+        // delete all files in target directory before extracting
+        std::filesystem::directory_iterator iter { output_path };
+        for (auto file : iter) {
+            if (file.is_regular_file()) {
+                std::filesystem::remove(file.path());
+            }
+        }
+        m_cleaned_paths.insert(output_path);
+    }
     output_path /= target.extract_name();
     begin_write(output_path);
 }
@@ -68,6 +78,10 @@ void fs_extractor::end_write() {
         stream.close();
     }
     m_active_writes.clear();
+}
+
+void fs_extractor::finalize() {
+    m_cleaned_paths.clear();
 }
 
 std::filesystem::path const& fs_extractor::output_path() {

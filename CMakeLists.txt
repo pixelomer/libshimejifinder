@@ -67,6 +67,7 @@ add_library(
     shimejifinder/archive.cc
     shimejifinder/archive_entry.cc
     shimejifinder/extract_target.cc
+    shimejifinder/extractor.cc
     shimejifinder/fs_extractor.cc
     shimejifinder/memory_extractor.cc
     shimejifinder/utf8_convert/jni.cc

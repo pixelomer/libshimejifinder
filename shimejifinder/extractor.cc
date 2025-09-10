@@ -16,29 +16,10 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // 
 
-#pragma once
 #include "extractor.hpp"
-#include <filesystem>
-#include <vector>
-#include <set>
 
 namespace shimejifinder {
 
-class fs_extractor : public extractor {
-public:
-    fs_extractor(std::filesystem::path output);
-    virtual void begin_write(extract_target const& target);
-    virtual void write_next(size_t offset, const void *buf, size_t size);
-    virtual void end_write();
-    virtual void finalize();
-    virtual ~fs_extractor();
-    std::filesystem::path const& output_path();
-protected:
-    void begin_write(std::filesystem::path path);
-private:
-    std::filesystem::path m_output_path;
-    std::vector<std::ofstream> m_active_writes;
-    std::set<std::filesystem::path> m_cleaned_paths;
-};
+void extractor::finalize() {}
 
 }

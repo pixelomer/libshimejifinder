@@ -179,10 +179,12 @@ void archive::extract(extractor *extractor) {
         extract();
         close_opened_file();
         extract_internal_targets();
+        m_extractor->finalize();
         m_extractor = nullptr;
     }
     catch (...) {
         close_opened_file();
+        m_extractor->finalize();
         m_extractor = nullptr;
         throw;
     }
