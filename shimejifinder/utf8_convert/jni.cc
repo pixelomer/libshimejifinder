@@ -98,41 +98,111 @@ static void init_jni() {
 }
 
 static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string *out) {
-    jobject decoder = jni_env->CallObjectMethod(charset, mIDNewDecoder);
-    jobject ret = jni_env->CallObjectMethod(decoder, mIDOnMalformedInput, oCodingErrorActionReport);
-    if (ret != decoder) jni_env->DeleteLocalRef(ret);
-    ret = jni_env->CallObjectMethod(decoder, mIDOnUnmappableCharacter, oCodingErrorActionReport);
-    if (ret != decoder) jni_env->DeleteLocalRef(ret);
-    jbyteArray bytes = jni_env->NewByteArray(length);
+    #define discard(thiz, x) do { \
+        ret = (x); \
+        if (jni_env->ExceptionCheck()) { \
+            ret = nullptr; \
+            goto fail; \
+        } \
+        if (ret != thiz && ret != nullptr) { \
+            jni_env->DeleteLocalRef(ret); \
+        } \
+        ret = nullptr; \
+    } while(0)
+
+    jobject decoder = nullptr;
+    jobject ret = nullptr;
+    jstring str = nullptr;
+    jbyteArray bytes = nullptr;
+    jobject charBuffer = nullptr;
+    jobject stringBuilder = nullptr;
+    jobject byteBuffer = nullptr;
+    const char *chars = nullptr;
+    bool valid = false, success = false;
+
+    // create decoder
+    decoder = jni_env->CallObjectMethod(charset, mIDNewDecoder);
+    if (decoder == nullptr) goto fail;
+
+    // configure decoder to throw on decode error
+    discard(decoder, (jni_env->CallObjectMethod(decoder, mIDOnMalformedInput,
+        oCodingErrorActionReport)));
+    discard(decoder, (jni_env->CallObjectMethod(decoder, mIDOnUnmappableCharacter,
+        oCodingErrorActionReport)));
+    
+    // create byte array to store original string bytes
+    bytes = jni_env->NewByteArray(length);
+    if (bytes == nullptr) goto fail;
+
+    // copy bytes to byte array
     jni_env->SetByteArrayRegion(bytes, 0, length, c_bytes);
-    jobject byteBuffer = jni_env->CallStaticObjectMethod(ByteBuffer, mIDWrap, bytes);
-    jobject charBuffer = jni_env->CallObjectMethod(decoder, mIDDecode, byteBuffer);
 
-    bool valid = !jni_env->ExceptionCheck();
+    // wrap byte array in a ByteBuffer object
+    byteBuffer = jni_env->CallStaticObjectMethod(ByteBuffer, mIDWrap, bytes);
+    if (byteBuffer == nullptr) goto fail;
+
+    // attempt to decode the bytes
+    charBuffer = jni_env->CallObjectMethod(decoder, mIDDecode, byteBuffer);
+
+    // the decoder will throw an exception if the decode operation fails
+    valid = !jni_env->ExceptionCheck();
+    jni_env->ExceptionClear();
+
+    // free resources that are no longer needed
+#define clean(x) jni_env->DeleteLocalRef(x); x = nullptr;
+    clean(byteBuffer);
+    clean(bytes);
+    clean(decoder);
+#undef clean
+
+    // check if decode operation was successful
     if (valid && charBuffer != nullptr) {
-        // no exception occurred, valid encoding
+        success = true;
+        
+        // if requested, copy decoded string to output string
         if (out != nullptr) {
-            jobject stringBuilder = jni_env->NewObject(StringBuilder, mIDStringBuilderInit);
-            ret = jni_env->CallObjectMethod(stringBuilder, mIDAppend, charBuffer);
-            if (ret != stringBuilder) jni_env->DeleteLocalRef(ret);
-            auto str = (jstring)jni_env->CallObjectMethod(stringBuilder, mIDToString);
-            const char *chars = jni_env->GetStringUTFChars(str, nullptr);
-            *out = { chars, (size_t)jni_env->GetStringUTFLength(str) };
-            jni_env->ReleaseStringUTFChars(str, chars);
-            jni_env->DeleteLocalRef(str);
-            jni_env->DeleteLocalRef(stringBuilder);
-        }
-        jni_env->DeleteLocalRef(charBuffer);
-    }
-    else if (!valid) {
-        // exception occurred, invalid encoding
-        jni_env->ExceptionClear();
-    }
-    jni_env->DeleteLocalRef(byteBuffer);
-    jni_env->DeleteLocalRef(bytes);
-    jni_env->DeleteLocalRef(decoder);
+            // create StringBuilder
+            stringBuilder = jni_env->NewObject(StringBuilder, mIDStringBuilderInit);
+            if (stringBuilder == nullptr) goto fail;
 
-    return valid;
+            // append decoded string to StringBuilder
+            discard(stringBuilder, (jni_env->CallObjectMethod(stringBuilder, mIDAppend,
+                charBuffer)));
+
+            // obtain final jstring
+            str = (jstring)jni_env->CallObjectMethod(stringBuilder, mIDToString);
+            if (str == nullptr) goto fail;
+
+            // get UTF-8 bytes from jstring
+            chars = jni_env->GetStringUTFChars(str, nullptr);
+            if (chars == nullptr) goto fail;
+
+            // obtain std::string from UTF-8 bytes
+            *out = { chars, (size_t)jni_env->GetStringUTFLength(str) };
+        }
+    }
+
+    goto cleanup;
+fail:
+    success = false;
+cleanup:
+    jni_env->ExceptionClear();
+#define clean(x) if (x != nullptr) jni_env->DeleteLocalRef(x);
+    if (chars != nullptr) {
+        jni_env->ReleaseStringUTFChars(str, chars);
+    }
+    clean(str);
+    clean(decoder);
+    clean(ret);
+    clean(bytes);
+    clean(charBuffer);
+    clean(stringBuilder);
+    clean(byteBuffer);
+#undef clean
+
+#undef discard
+
+    return success;
 }
 
 bool is_valid_utf8(const std::string &str) {
