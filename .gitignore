@@ -15,6 +15,12 @@
 !shimejifinder/utf8_convert/*.cc
 !shimejifinder/*.cc
 !shimejifinder/*.hpp
+!tests/
+!tests/**/
+!tests/**/CMakeLists.txt
+!tests/**/*.cc
+!test_utf8_convert.sh
+tests/**/build/
 shimejifinder/default_actions.cc
 shimejifinder/default_behaviors.cc
 !.gitignore
