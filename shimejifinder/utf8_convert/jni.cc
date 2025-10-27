@@ -308,7 +308,7 @@ bool is_valid_utf8(const std::string &str) {
 
 bool shift_jis_to_utf8(std::string &str) {
     if (!init_jni() || oShiftJISCharset == nullptr) {
-        return true;
+        return false;
     }
     return jni_decode(oShiftJISCharset, (const jbyte *)str.c_str(), (jsize)str.size(), &str);
 }
