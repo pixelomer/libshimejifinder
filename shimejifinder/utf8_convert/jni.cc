@@ -25,79 +25,146 @@ namespace shimejifinder {
 
 JNIEnv *jni_env = nullptr;
 
-static jclass CharsetDecoder;
-static jclass Charset;
-static jclass CodingErrorAction;
-static jclass ByteBuffer;
-static jclass StringBuilder;
-static jmethodID mIDForName;
-static jmethodID mIDNewDecoder;
-static jmethodID mIDOnMalformedInput;
-static jmethodID mIDOnUnmappableCharacter;
-static jmethodID mIDDecode;
-static jmethodID mIDWrap;
-static jmethodID mIDAppend;
-static jmethodID mIDStringBuilderInit;
-static jmethodID mIDToString;
-static jfieldID fIDREPORT;
-static jobject oUTF8Charset;
-static jobject oShiftJISCharset;
-static jobject oCodingErrorActionReport;
+static jclass CharsetDecoder = nullptr;
+static jclass Charset = nullptr;
+static jclass CodingErrorAction = nullptr;
+static jclass ByteBuffer = nullptr;
+static jclass StringBuilder = nullptr;
+static jmethodID mIDForName = nullptr;
+static jmethodID mIDNewDecoder = nullptr;
+static jmethodID mIDOnMalformedInput = nullptr;
+static jmethodID mIDOnUnmappableCharacter = nullptr;
+static jmethodID mIDDecode = nullptr;
+static jmethodID mIDWrap = nullptr;
+static jmethodID mIDAppend = nullptr;
+static jmethodID mIDStringBuilderInit = nullptr;
+static jmethodID mIDToString = nullptr;
+static jfieldID fIDREPORT = nullptr;
+static jobject oUTF8Charset = nullptr;
+static jobject oShiftJISCharset = nullptr;
+static jobject oCodingErrorActionReport = nullptr;
 
 static bool jni_objects_cached = false;
+static bool jni_init_attempted = false;
 
-template<typename T>
-static T make_global(T obj) {
-    if (obj == nullptr) return nullptr;
-    T globalRef = (T)jni_env->NewGlobalRef(obj);
-    jni_env->DeleteLocalRef(obj);
-    return globalRef;
-}
+bool init_jni() {
+    if (!jni_init_attempted) {
+        jni_init_attempted = true;
 
-static void init_jni() {
-    if (!jni_objects_cached) {
-        StringBuilder = make_global(jni_env->FindClass("java/lang/StringBuilder"));
-        mIDStringBuilderInit = jni_env->GetMethodID(StringBuilder, "<init>", "()V");
-        mIDToString = jni_env->GetMethodID(StringBuilder, "toString", "()Ljava/lang/String;");
-        mIDAppend = jni_env->GetMethodID(StringBuilder, "append",
-            "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;");
-        ByteBuffer = make_global(jni_env->FindClass("java/nio/ByteBuffer"));
-        mIDWrap = jni_env->GetStaticMethodID(ByteBuffer, "wrap", "([B)Ljava/nio/ByteBuffer;");
-        CharsetDecoder = make_global(jni_env->FindClass("java/nio/charset/CharsetDecoder"));
-        Charset = make_global(jni_env->FindClass("java/nio/charset/Charset"));
-        mIDForName = jni_env->GetStaticMethodID(Charset, "forName",
-            "(Ljava/lang/String;)Ljava/nio/charset/Charset;");
-        mIDNewDecoder = jni_env->GetMethodID(Charset, "newDecoder",
-            "()Ljava/nio/charset/CharsetDecoder;");
-        mIDOnMalformedInput = jni_env->GetMethodID(CharsetDecoder, "onMalformedInput",
-            "(Ljava/nio/charset/CodingErrorAction;)Ljava/nio/charset/CharsetDecoder;");
-        mIDOnUnmappableCharacter = jni_env->GetMethodID(CharsetDecoder, "onUnmappableCharacter",
-            "(Ljava/nio/charset/CodingErrorAction;)Ljava/nio/charset/CharsetDecoder;");
-        CodingErrorAction = make_global(jni_env->FindClass("java/nio/charset/CodingErrorAction"));
-        fIDREPORT = jni_env->GetStaticFieldID(CodingErrorAction, "REPORT",
-            "Ljava/nio/charset/CodingErrorAction;");
-        mIDDecode = jni_env->GetMethodID(CharsetDecoder, "decode",
-            "(Ljava/nio/ByteBuffer;)Ljava/nio/CharBuffer;");
-        jstring sUTF8 = jni_env->NewStringUTF("UTF-8");
-        oUTF8Charset = make_global(jni_env->CallStaticObjectMethod(Charset, mIDForName, sUTF8));
-        jni_env->DeleteLocalRef(sUTF8);
-        if (jni_env->ExceptionCheck()) {
+        #define safe_load(a, b) do { \
+            a = (b); \
+            if (jni_env->ExceptionCheck() || a == nullptr) { \
+                if (jni_env->ExceptionCheck()) jni_env->ExceptionClear(); \
+                a = nullptr; \
+                return false; \
+            } \
+        } while (0)
+
+        #define make_global(ref) do { \
+            jobject globalRef = (jobject)jni_env->NewGlobalRef(ref); \
+            if (jni_env->ExceptionCheck() || globalRef == nullptr) { \
+                if (jni_env->ExceptionCheck()) jni_env->ExceptionClear(); \
+                jni_env->DeleteLocalRef(ref); \
+                ref = nullptr; \
+                return false; \
+            } \
+            jni_env->DeleteLocalRef(ref); \
+            ref = (decltype(ref))globalRef; \
+        } while (0)
+
+        // StringBuilder class
+        safe_load(StringBuilder, jni_env->FindClass("java/lang/StringBuilder"));
+        make_global(StringBuilder);
+
+        // StringBuilder methods
+        safe_load(mIDStringBuilderInit, jni_env->GetMethodID(StringBuilder,
+            "<init>", "()V"));
+        safe_load(mIDToString, jni_env->GetMethodID(StringBuilder, "toString",
+            "()Ljava/lang/String;"));
+        safe_load(mIDAppend, jni_env->GetMethodID(StringBuilder, "append",
+            "(Ljava/lang/CharSequence;)Ljava/lang/StringBuilder;"));
+        
+        // ByteBuffer class
+        safe_load(ByteBuffer, jni_env->FindClass("java/nio/ByteBuffer"));
+        make_global(ByteBuffer);
+
+        // ByteBuffer methods
+        safe_load(mIDWrap, jni_env->GetStaticMethodID(ByteBuffer, "wrap",
+            "([B)Ljava/nio/ByteBuffer;"));
+        
+        // CharsetDecoder class
+        safe_load(CharsetDecoder, jni_env->FindClass("java/nio/charset/CharsetDecoder"));
+        make_global(CharsetDecoder);
+
+        // CharsetDecoder methods
+        safe_load(mIDOnMalformedInput, jni_env->GetMethodID(CharsetDecoder,
+            "onMalformedInput",
+            "(Ljava/nio/charset/CodingErrorAction;)Ljava/nio/charset/CharsetDecoder;"));
+        safe_load(mIDOnUnmappableCharacter, jni_env->GetMethodID(CharsetDecoder,
+            "onUnmappableCharacter",
+            "(Ljava/nio/charset/CodingErrorAction;)Ljava/nio/charset/CharsetDecoder;"));
+        safe_load(mIDDecode, jni_env->GetMethodID(CharsetDecoder, "decode",
+            "(Ljava/nio/ByteBuffer;)Ljava/nio/CharBuffer;"));
+
+        // Charset class
+        safe_load(Charset, jni_env->FindClass("java/nio/charset/Charset"));
+        make_global(Charset);
+
+        // Charset methods
+        safe_load(mIDForName, jni_env->GetStaticMethodID(Charset, "forName",
+            "(Ljava/lang/String;)Ljava/nio/charset/Charset;"));
+        safe_load(mIDNewDecoder, jni_env->GetMethodID(Charset, "newDecoder",
+            "()Ljava/nio/charset/CharsetDecoder;"));
+        
+        // CodingErrorAcion class
+        safe_load(CodingErrorAction, jni_env->FindClass("java/nio/charset/CodingErrorAction"));
+        make_global(CodingErrorAction);
+
+        // CodingErrorAction fields
+        safe_load(fIDREPORT, jni_env->GetStaticFieldID(CodingErrorAction, "REPORT",
+            "Ljava/nio/charset/CodingErrorAction;"));
+        safe_load(oCodingErrorActionReport, jni_env->GetStaticObjectField(CodingErrorAction,
+            fIDREPORT));
+        make_global(oCodingErrorActionReport);
+        
+        // UTF-8 charset (required)
+        jstring sUTF8;
+        safe_load(sUTF8, jni_env->NewStringUTF("UTF-8"));
+        oUTF8Charset = jni_env->CallStaticObjectMethod(Charset, mIDForName, sUTF8);
+        if (jni_env->ExceptionCheck() || oUTF8Charset == nullptr) {
+            if (jni_env->ExceptionCheck()) jni_env->ExceptionClear();
             oUTF8Charset = nullptr;
-            jni_env->ExceptionClear();
+            jni_env->DeleteLocalRef(sUTF8);
+            return false;
         }
-        jstring sShiftJIS = jni_env->NewStringUTF("Shift_JIS");
-        oShiftJISCharset = make_global(jni_env->CallStaticObjectMethod(Charset, mIDForName, sShiftJIS));
-        jni_env->DeleteLocalRef(sShiftJIS);
-        if (jni_env->ExceptionCheck()) {
+        make_global(oUTF8Charset);
+        jni_env->DeleteLocalRef(sUTF8);
+
+        // Shift_JIS charset (optional)
+        jstring sShiftJIS;
+        safe_load(sShiftJIS, jni_env->NewStringUTF("Shift_JIS"));
+        oShiftJISCharset = jni_env->CallStaticObjectMethod(Charset, mIDForName, sShiftJIS);
+        if (jni_env->ExceptionCheck() || oShiftJISCharset == nullptr) {
+            if (jni_env->ExceptionCheck()) jni_env->ExceptionClear();
             oShiftJISCharset = nullptr;
-            jni_env->ExceptionClear();
+            jni_env->DeleteLocalRef(sShiftJIS);
         }
-        oCodingErrorActionReport = make_global(jni_env->GetStaticObjectField(CodingErrorAction, fIDREPORT));
+        else {
+            jni_env->DeleteLocalRef(sShiftJIS);
+            make_global(oShiftJISCharset);
+        }
+
+        // All JNI objects have been cached
         jni_objects_cached = true;
+
+        #undef safe_load
+        #undef make_global
     }
+    return jni_objects_cached;
 }
 
-static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string *out) {
+__attribute__((noinline))
+bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string *out) {
     #define discard(thiz, x) do { \
         ret = (x); \
         if (jni_env->ExceptionCheck()) { \
@@ -122,7 +189,10 @@ static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std:
 
     // create decoder
     decoder = jni_env->CallObjectMethod(charset, mIDNewDecoder);
-    if (decoder == nullptr) goto fail;
+    if (jni_env->ExceptionCheck() || decoder == nullptr) {
+        decoder = nullptr;
+        goto fail;
+    }
 
     // configure decoder to throw on decode error
     discard(decoder, (jni_env->CallObjectMethod(decoder, mIDOnMalformedInput,
@@ -132,21 +202,32 @@ static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std:
     
     // create byte array to store original string bytes
     bytes = jni_env->NewByteArray(length);
-    if (bytes == nullptr) goto fail;
+    if (jni_env->ExceptionCheck() || bytes == nullptr) {
+        bytes = nullptr;
+        goto fail;
+    }
 
     // copy bytes to byte array
     jni_env->SetByteArrayRegion(bytes, 0, length, c_bytes);
 
     // wrap byte array in a ByteBuffer object
     byteBuffer = jni_env->CallStaticObjectMethod(ByteBuffer, mIDWrap, bytes);
-    if (byteBuffer == nullptr) goto fail;
+    if (jni_env->ExceptionCheck() || byteBuffer == nullptr) {
+        byteBuffer = nullptr;
+        goto fail;
+    }
 
     // attempt to decode the bytes
     charBuffer = jni_env->CallObjectMethod(decoder, mIDDecode, byteBuffer);
 
     // the decoder will throw an exception if the decode operation fails
-    valid = !jni_env->ExceptionCheck();
-    jni_env->ExceptionClear();
+    if (jni_env->ExceptionCheck()) {
+        valid = false;
+        jni_env->ExceptionClear();
+    }
+    else {
+        valid = true;
+    }
 
     // free resources that are no longer needed
 #define clean(x) jni_env->DeleteLocalRef(x); x = nullptr;
@@ -163,7 +244,10 @@ static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std:
         if (out != nullptr) {
             // create StringBuilder
             stringBuilder = jni_env->NewObject(StringBuilder, mIDStringBuilderInit);
-            if (stringBuilder == nullptr) goto fail;
+            if (jni_env->ExceptionCheck() || stringBuilder == nullptr) {
+                stringBuilder = nullptr;
+                goto fail;
+            }
 
             // append decoded string to StringBuilder
             discard(stringBuilder, (jni_env->CallObjectMethod(stringBuilder, mIDAppend,
@@ -171,11 +255,17 @@ static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std:
 
             // obtain final jstring
             str = (jstring)jni_env->CallObjectMethod(stringBuilder, mIDToString);
-            if (str == nullptr) goto fail;
+            if (jni_env->ExceptionCheck() || str == nullptr) {
+                str = nullptr;
+                goto fail;
+            }
 
             // get UTF-8 bytes from jstring
             chars = jni_env->GetStringUTFChars(str, nullptr);
-            if (chars == nullptr) goto fail;
+            if (jni_env->ExceptionCheck() || chars == nullptr) {
+                chars = nullptr;
+                goto fail;
+            }
 
             // obtain std::string from UTF-8 bytes
             *out = { chars, (size_t)jni_env->GetStringUTFLength(str) };
@@ -186,7 +276,9 @@ static bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std:
 fail:
     success = false;
 cleanup:
-    jni_env->ExceptionClear();
+    if (jni_env->ExceptionCheck()) {
+        jni_env->ExceptionClear();
+    }
 #define clean(x) if (x != nullptr) jni_env->DeleteLocalRef(x);
     if (chars != nullptr) {
         jni_env->ReleaseStringUTFChars(str, chars);
@@ -206,20 +298,17 @@ cleanup:
 }
 
 bool is_valid_utf8(const std::string &str) {
-    init_jni();
-    if (oUTF8Charset == nullptr) {
-        // this should never happen
-        // https://developer.android.com/reference/java/nio/charset/Charset#standard-charsets
-        return false;
+    if (!init_jni() || oUTF8Charset == nullptr) {
+        // it is generally preferable to pretend all strings are valid
+        // utf-8 if JNI initialization fails for whatever reason
+        return true;
     }
     return jni_decode(oUTF8Charset, (const jbyte *)str.c_str(), (jsize)str.size(), nullptr);
 }
 
 bool shift_jis_to_utf8(std::string &str) {
-    init_jni();
-    if (oShiftJISCharset == nullptr) {
-        // this may happen, in which case Shift_JIS archives will not be supported
-        return false;
+    if (!init_jni() || oShiftJISCharset == nullptr) {
+        return true;
     }
     return jni_decode(oShiftJISCharset, (const jbyte *)str.c_str(), (jsize)str.size(), &str);
 }

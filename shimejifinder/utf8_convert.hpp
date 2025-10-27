@@ -28,6 +28,7 @@ namespace shimejifinder {
 
 #if SHIMEJIFINDER_USE_JNI
 extern JNIEnv *jni_env;
+bool init_jni();
 #endif
 bool is_valid_utf8(const std::string &str);
 bool shift_jis_to_utf8(std::string &str);
