@@ -221,9 +221,12 @@ bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string
     charBuffer = jni_env->CallObjectMethod(decoder, mIDDecode, byteBuffer);
 
     // the decoder will throw an exception if the decode operation fails
-    if (jni_env->ExceptionCheck()) {
+    if (jni_env->ExceptionCheck() || charBuffer == nullptr) {
         valid = false;
-        jni_env->ExceptionClear();
+        charBuffer = nullptr;
+        if (jni_env->ExceptionCheck()) {
+            jni_env->ExceptionClear();
+        }
     }
     else {
         valid = true;
