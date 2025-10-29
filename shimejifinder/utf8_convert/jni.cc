@@ -229,13 +229,6 @@ bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string
         valid = true;
     }
 
-    // free resources that are no longer needed
-#define clean(x) jni_env->DeleteLocalRef(x); x = nullptr;
-    clean(byteBuffer);
-    clean(bytes);
-    clean(decoder);
-#undef clean
-
     // check if decode operation was successful
     if (valid && charBuffer != nullptr) {
         success = true;
