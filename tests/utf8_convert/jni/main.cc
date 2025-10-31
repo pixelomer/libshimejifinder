@@ -9,7 +9,12 @@ int main(int argc, char **argv) {
 
     // create JVM
     vm_args.version  = JNI_VERSION_9;
-    vm_args.nOptions = 0;
+    JavaVMOption options[] = {
+        { (char *)"-Xms64m", NULL },
+        { (char *)"-Xmx128m", NULL }
+    };
+    vm_args.nOptions = sizeof(options) / sizeof(*options);
+    vm_args.options = options;
     res = JNI_CreateJavaVM(&vm, (void **)&env, &vm_args);
     if (res != JNI_OK) {
         std::cerr << "Failed to create JVM" << std::endl;
