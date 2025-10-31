@@ -88,7 +88,7 @@ elseif(SHIMEJIFINDER_USE_ICONV)
         -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
 elseif(SHIMEJIFINDER_USE_JNI)
     find_package(JNI REQUIRED)
-    target_link_libraries(shimejifinder ${JNI_LIBRARIES})
+    target_link_libraries(shimejifinder JNI::JNI JNI::JVM)
     target_include_directories(shimejifinder PUBLIC ${JNI_INCLUDE_DIRS})
     target_compile_definitions(shimejifinder PUBLIC -DSHIMEJIFINDER_USE_JNI=1
         -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
