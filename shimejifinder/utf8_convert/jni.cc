@@ -182,7 +182,6 @@ bool jni_decode(jobject charset, const jbyte *c_bytes, jsize length, std::string
     } while(0)
 
     jobject decoder = nullptr;
-    jobject ret = nullptr;
     jstring str = nullptr;
     jbyteArray bytes = nullptr;
     jobject charBuffer = nullptr;
