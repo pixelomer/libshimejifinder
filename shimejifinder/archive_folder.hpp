@@ -45,8 +45,6 @@ public:
     const std::map<std::string, std::shared_ptr<archive_entry>> &files() const;
     archive_folder *folder_named(std::string const& name);
     const archive_folder *folder_named(std::string const& name) const;
-    archive_folder *folder_named(std::string const& name, std::string const& name2);
-    const archive_folder *folder_named(std::string const& name, std::string const& name2) const;
     archive_entry *entry_named(std::string const& name) const;
     void print(std::ostream &out = std::cout) const;
     std::string const& name() const;

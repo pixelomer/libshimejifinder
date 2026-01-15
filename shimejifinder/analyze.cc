@@ -81,8 +81,7 @@ private:
 
     static std::set<std::string> find_paths(
         std::string const& actions_xml);
-    static void add_search_paths(std::string const& name,
-        std::vector<const archive_folder *> &search_paths,
+    static void add_search_paths(std::vector<const archive_folder *> &search_paths,
         const archive_folder *base);
     bool register_shimeji(const archive_folder *base,
         archive_entry *actions, archive_entry *behaviors,
@@ -135,7 +134,7 @@ size_t analyzer::discover_shimejiee(const archive_folder *img,
     return associated;
 }
 
-void analyzer::add_search_paths(std::string const& name, std::vector<const archive_folder *>
+void analyzer::add_search_paths(std::vector<const archive_folder *>
     &search_paths, const archive_folder *base)
 {
     search_paths.push_back( base );
@@ -159,9 +158,9 @@ bool analyzer::register_shimeji(const archive_folder *base,
 {
     auto name = shimeji_name(base);
     std::vector<const archive_folder *> search_paths;
-    add_search_paths(name, search_paths, base);
+    add_search_paths(search_paths, base);
     if (alternative_base != nullptr) {
-        add_search_paths(name, search_paths, alternative_base);
+        add_search_paths(search_paths, alternative_base);
     }
 
     // de-duplicate search paths
