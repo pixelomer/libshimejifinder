@@ -25,9 +25,24 @@ namespace shimejifinder {
 archive_entry::archive_entry(): m_valid(false), m_index(-1) {}
 archive_entry::archive_entry(int index): m_valid(false), m_index(index) {}
 archive_entry::archive_entry(int index, std::string const& path): m_valid(true),
-    m_index(index), m_path(path),
-    m_lowername(to_lower(last_component(path))),
-    m_extension(file_extension(m_lowername)) {}
+    m_index(index), m_path(path)
+{
+    //XXX: HACK: if path is in the format .../conf/Name/*.xml, convert it to .../img/Name/*.xml
+    auto slash3 = m_path.rfind('/');
+    if (slash3 == std::string::npos || slash3 == 0) return;
+    auto slash2 = m_path.rfind('/', slash3-1);
+    if (slash2 == std::string::npos || slash2 == 0) return;
+    auto slash1 = m_path.rfind('/', slash2-1);
+    if (slash1 == std::string::npos) slash1 = 0;
+    else slash1 += 1;
+    if (m_path.substr(slash1, slash2-slash1) == "conf" && slash3 - slash2 > 1 &&
+        (m_path.substr(slash3+1) == "actions.xml" || m_path.substr(slash3+1) == "behaviors.xml"))
+    {
+        m_path = m_path.substr(0, slash1) + "img" + m_path.substr(slash2);
+    }
+    m_lowername = to_lower(last_component(path));
+    m_extension = file_extension(m_lowername);
+}
 
 bool archive_entry::valid() const {
     return m_valid;
