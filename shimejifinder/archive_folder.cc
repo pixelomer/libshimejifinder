@@ -41,6 +41,26 @@ const archive_folder *archive_folder::folder_named(std::string const& name) cons
     return m_folders.count(name) == 1 ? &m_folders.at(name) : nullptr;
 }
 
+archive_folder *archive_folder::folder_named(std::string const& name, std::string const& name2) {
+    auto folder = folder_named(name);
+    if (folder != nullptr) {
+        return folder->folder_named(name2);
+    }
+    else {
+        return nullptr;
+    }
+}
+
+const archive_folder *archive_folder::folder_named(std::string const& name, std::string const& name2) const {
+    auto folder = folder_named(name);
+    if (folder != nullptr) {
+        return folder->folder_named(name2);
+    }
+    else {
+        return nullptr;
+    }
+}
+
 archive_entry *archive_folder::entry_named(std::string const& name) const {
     return m_entries.count(name) == 1 ? m_entries.at(name).get() : nullptr;
 }
