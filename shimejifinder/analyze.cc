@@ -140,24 +140,16 @@ void analyzer::add_search_paths(std::string const& name, std::vector<const archi
 {
     search_paths.push_back( base );
     search_paths.push_back( base->folder_named("img") );
-    search_paths.push_back( base->folder_named("img", name) );
     search_paths.push_back( base->folder_named("sound") );
-    search_paths.push_back( base->folder_named("sound", name) );
     search_paths.push_back( base->parent() );
     search_paths.push_back( base->parent()->folder_named("img") );
-    search_paths.push_back( base->parent()->folder_named("img", name) );
     search_paths.push_back( base->parent()->folder_named("sound") );
-    search_paths.push_back( base->parent()->folder_named("sound", name) );
     search_paths.push_back( base->parent()->parent() );
     search_paths.push_back( base->parent()->parent()->folder_named("img") );
-    search_paths.push_back( base->parent()->parent()->folder_named("img", name) );
     search_paths.push_back( base->parent()->parent()->folder_named("sound") );
-    search_paths.push_back( base->parent()->parent()->folder_named("sound", name) );
     search_paths.push_back( base->parent()->parent()->parent() );
     search_paths.push_back( base->parent()->parent()->parent()->folder_named("img") );
-    search_paths.push_back( base->parent()->parent()->parent()->folder_named("img", name) );
     search_paths.push_back( base->parent()->parent()->parent()->folder_named("sound") );
-    search_paths.push_back( base->parent()->parent()->parent()->folder_named("sound", name) );
 }
 
 bool analyzer::register_shimeji(const archive_folder *base,
