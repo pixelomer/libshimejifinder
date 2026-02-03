@@ -76,7 +76,12 @@ add_library(
     shimejifinder/utils.cc
 )
 
-if(SHIMEJIFINDER_USE_ICU)
+if(SHIMEJIFINDER_USE_CUSTOM_UTF8_CONVERT)
+    # consumer of libshimejifinder must provide shimejifinder::is_valid_utf8
+    # and shimejifinder::shift_jis_to_utf8
+    target_compile_definitions(shimejifinder PUBLIC -DSHIMEJIFINDER_USE_CUSTOM_UTF8_CONVERT=1
+        -DSHIMEJIFINDER_HAS_UTF8_CONVERT=1)
+elseif(SHIMEJIFINDER_USE_ICU)
     find_package(ICU COMPONENTS uc REQUIRED)
     target_link_libraries(shimejifinder ICU::uc)
     target_compile_definitions(shimejifinder PUBLIC -DSHIMEJIFINDER_USE_ICU=1
