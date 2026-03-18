@@ -23,6 +23,7 @@
 tests/**/build/
 shimejifinder/default_actions.cc
 shimejifinder/default_behaviors.cc
+!.gitattributes
 !.gitignore
 !.gitmodules
 !bin2cpp.sh
