@@ -26,6 +26,7 @@ shimejifinder/default_behaviors.cc
 !.gitattributes
 !.gitignore
 !.gitmodules
+!make_default_xmls.sh
 !bin2cpp.sh
 !default_actions.xml
 !default_behaviors.xml

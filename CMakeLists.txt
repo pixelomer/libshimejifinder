@@ -13,8 +13,7 @@ set(ENABLE_CPIO OFF)
 
 add_custom_command(
     OUTPUT default_xmls
-    COMMAND ./bin2cpp.sh default_actions.xml shimejifinder/default_actions.cc &&
-        ./bin2cpp.sh default_behaviors.xml shimejifinder/default_behaviors.cc
+    COMMAND bash make_default_xmls.sh
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS bin2cpp.sh
 )
